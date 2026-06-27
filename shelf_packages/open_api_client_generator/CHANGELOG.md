@@ -1,4 +1,7 @@
 
+## 1.2.1
+- fix: fixed issue with `part-folder` cli arg
+
 ## 1.2.0
 - feat: added support to specify 'part' folder to handle the redirect generation code via build_runner
 - build: allow `open_api_specification` to `>=3.0.0 <3.1.0`
