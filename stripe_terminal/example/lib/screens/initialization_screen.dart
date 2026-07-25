@@ -54,7 +54,7 @@ class _InitializationScreenState extends State<InitializationScreen> with StateT
       }
     }
 
-    await Terminal.initTerminal(
+    await Terminal.init(
       shouldPrintLogs: true,
       fetchToken: StripeApi.instance.createTerminalConnectionToken,
     );

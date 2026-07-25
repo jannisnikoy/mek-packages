@@ -36,7 +36,7 @@ class Terminal {
   static bool get isInitialized => _instance != null;
 
   /// Initializes the terminal SDK
-  static Future<void> initTerminal({
+  static Future<void> init({
     bool shouldPrintLogs = false,
 
     /// A callback function that returns a Future which resolves to a connection token from your backend

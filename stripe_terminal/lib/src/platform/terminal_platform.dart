@@ -3,14 +3,14 @@ library stripe_terminal;
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:mek_stripe_terminal/mek_stripe_terminal.dart';
 import 'package:mek_stripe_terminal/src/models/card.dart';
 import 'package:mek_stripe_terminal/src/models/cart.dart';
-import 'package:mek_stripe_terminal/src/models/clear_cached_credentials_result.dart';
 import 'package:mek_stripe_terminal/src/models/charge.dart';
+import 'package:mek_stripe_terminal/src/models/clear_cached_credentials_result.dart';
 import 'package:mek_stripe_terminal/src/models/connection_configuration.dart';
 import 'package:mek_stripe_terminal/src/models/disconnect_reason.dart';
 import 'package:mek_stripe_terminal/src/models/discovery_configuration.dart';
+import 'package:mek_stripe_terminal/src/models/discovery_filter.dart';
 import 'package:mek_stripe_terminal/src/models/easy_connect_configuration.dart';
 import 'package:mek_stripe_terminal/src/models/location.dart';
 import 'package:mek_stripe_terminal/src/models/payment.dart';

@@ -486,9 +486,8 @@ Address _$deserializeAddress(List<Object?> serialized) => Address(
 ClearCachedCredentialsResult _$deserializeClearCachedCredentialsResult(List<Object?> serialized) =>
     ClearCachedCredentialsResult(
         isSuccessful: serialized[0] as bool,
-        error: serialized[1] != null
-            ? _$deserializeTerminalException(serialized[1] as List)
-            : null);
+        error:
+            serialized[1] != null ? _$deserializeTerminalException(serialized[1] as List) : null);
 AmountDetails _$deserializeAmountDetails(List<Object?> serialized) =>
     AmountDetails(tip: serialized[0] != null ? _$deserializeTip(serialized[0] as List) : null);
 CardDetails _$deserializeCardDetails(List<Object?> serialized) => CardDetails(
