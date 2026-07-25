@@ -34,13 +34,14 @@ mixin _$ReaderSoftwareUpdate {
   }
 
   @override
-  String toString() => (ClassToString('ReaderSoftwareUpdate')
-        ..add('components', _self.components)
-        ..add('keyProfileName', _self.keyProfileName)
-        ..add('onlyInstallRequiredUpdates', _self.onlyInstallRequiredUpdates)
-        ..add('requiredAt', _self.requiredAt)
-        ..add('settingsVersion', _self.settingsVersion)
-        ..add('timeEstimate', _self.timeEstimate)
-        ..add('version', _self.version))
-      .toString();
+  String toString() =>
+      (ClassToString('ReaderSoftwareUpdate')
+            ..add('components', _self.components)
+            ..add('keyProfileName', _self.keyProfileName)
+            ..add('onlyInstallRequiredUpdates', _self.onlyInstallRequiredUpdates)
+            ..add('requiredAt', _self.requiredAt)
+            ..add('settingsVersion', _self.settingsVersion)
+            ..add('timeEstimate', _self.timeEstimate)
+            ..add('version', _self.version))
+          .toString();
 }

@@ -121,7 +121,7 @@ enum LocationStatus {
   set,
 
   /// This location is known to be not set. location will be null.
-  notSet
+  notSet,
 }
 
 /// The reader’s device type.
@@ -297,7 +297,7 @@ enum ReaderInputOption {
   tapCard,
 
   /// Manually enter the card information (MOTO).
-  manualEntry
+  manualEntry,
 }
 
 enum NetworkStatus {

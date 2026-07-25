@@ -32,14 +32,15 @@ mixin _$CardDetails {
   }
 
   @override
-  String toString() => (ClassToString('CardDetails')
-        ..add('brand', _self.brand)
-        ..add('country', _self.country)
-        ..add('expMonth', _self.expMonth)
-        ..add('expYear', _self.expYear)
-        ..add('funding', _self.funding)
-        ..add('last4', _self.last4))
-      .toString();
+  String toString() =>
+      (ClassToString('CardDetails')
+            ..add('brand', _self.brand)
+            ..add('country', _self.country)
+            ..add('expMonth', _self.expMonth)
+            ..add('expYear', _self.expYear)
+            ..add('funding', _self.funding)
+            ..add('last4', _self.last4))
+          .toString();
 }
 
 mixin _$CardPresentDetails {
@@ -80,20 +81,21 @@ mixin _$CardPresentDetails {
   }
 
   @override
-  String toString() => (ClassToString('CardPresentDetails')
-        ..add('brand', _self.brand)
-        ..add('country', _self.country)
-        ..add('expMonth', _self.expMonth)
-        ..add('expYear', _self.expYear)
-        ..add('funding', _self.funding)
-        ..add('last4', _self.last4)
-        ..add('cardholderName', _self.cardholderName)
-        ..add('emvAuthData', _self.emvAuthData)
-        ..add('generatedCard', _self.generatedCard)
-        ..add('incrementalAuthorizationStatus', _self.incrementalAuthorizationStatus)
-        ..add('networks', _self.networks)
-        ..add('receipt', _self.receipt))
-      .toString();
+  String toString() =>
+      (ClassToString('CardPresentDetails')
+            ..add('brand', _self.brand)
+            ..add('country', _self.country)
+            ..add('expMonth', _self.expMonth)
+            ..add('expYear', _self.expYear)
+            ..add('funding', _self.funding)
+            ..add('last4', _self.last4)
+            ..add('cardholderName', _self.cardholderName)
+            ..add('emvAuthData', _self.emvAuthData)
+            ..add('generatedCard', _self.generatedCard)
+            ..add('incrementalAuthorizationStatus', _self.incrementalAuthorizationStatus)
+            ..add('networks', _self.networks)
+            ..add('receipt', _self.receipt))
+          .toString();
 }
 
 mixin _$CardNetworks {
@@ -114,10 +116,11 @@ mixin _$CardNetworks {
   }
 
   @override
-  String toString() => (ClassToString('CardNetworks')
-        ..add('available', _self.available)
-        ..add('preferred', _self.preferred))
-      .toString();
+  String toString() =>
+      (ClassToString('CardNetworks')
+            ..add('available', _self.available)
+            ..add('preferred', _self.preferred))
+          .toString();
 }
 
 mixin _$ReceiptDetails {
@@ -150,16 +153,17 @@ mixin _$ReceiptDetails {
   }
 
   @override
-  String toString() => (ClassToString('ReceiptDetails')
-        ..add('accountType', _self.accountType)
-        ..add('applicationPreferredName', _self.applicationPreferredName)
-        ..add('authorizationCode', _self.authorizationCode)
-        ..add('authorizationResponseCode', _self.authorizationResponseCode)
-        ..add('applicationCryptogram', _self.applicationCryptogram)
-        ..add('dedicatedFileName', _self.dedicatedFileName)
-        ..add('transactionStatusInformation', _self.transactionStatusInformation)
-        ..add('terminalVerificationResults', _self.terminalVerificationResults))
-      .toString();
+  String toString() =>
+      (ClassToString('ReceiptDetails')
+            ..add('accountType', _self.accountType)
+            ..add('applicationPreferredName', _self.applicationPreferredName)
+            ..add('authorizationCode', _self.authorizationCode)
+            ..add('authorizationResponseCode', _self.authorizationResponseCode)
+            ..add('applicationCryptogram', _self.applicationCryptogram)
+            ..add('dedicatedFileName', _self.dedicatedFileName)
+            ..add('transactionStatusInformation', _self.transactionStatusInformation)
+            ..add('terminalVerificationResults', _self.terminalVerificationResults))
+          .toString();
 }
 
 mixin _$CardPresentParameters {
@@ -185,11 +189,14 @@ mixin _$CardPresentParameters {
   }
 
   @override
-  String toString() => (ClassToString('CardPresentParameters')
-        ..add('captureMethod', _self.captureMethod)
-        ..add('requestExtendedAuthorization', _self.requestExtendedAuthorization)
-        ..add(
-            'requestIncrementalAuthorizationSupport', _self.requestIncrementalAuthorizationSupport)
-        ..add('requestedPriority', _self.requestedPriority))
-      .toString();
+  String toString() =>
+      (ClassToString('CardPresentParameters')
+            ..add('captureMethod', _self.captureMethod)
+            ..add('requestExtendedAuthorization', _self.requestExtendedAuthorization)
+            ..add(
+              'requestIncrementalAuthorizationSupport',
+              _self.requestIncrementalAuthorizationSupport,
+            )
+            ..add('requestedPriority', _self.requestedPriority))
+          .toString();
 }

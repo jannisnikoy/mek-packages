@@ -44,18 +44,19 @@ mixin _$Reader {
   }
 
   @override
-  String toString() => (ClassToString('Reader')
-        ..add('id', _self.id)
-        ..add('locationStatus', _self.locationStatus)
-        ..add('deviceType', _self.deviceType)
-        ..add('simulated', _self.simulated)
-        ..add('locationId', _self.locationId)
-        ..add('location', _self.location)
-        ..add('serialNumber', _self.serialNumber)
-        ..add('availableUpdate', _self.availableUpdate)
-        ..add('batteryLevel', _self.batteryLevel)
-        ..add('ipAddress', _self.ipAddress)
-        ..add('networkStatus', _self.networkStatus)
-        ..add('label', _self.label))
-      .toString();
+  String toString() =>
+      (ClassToString('Reader')
+            ..add('id', _self.id)
+            ..add('locationStatus', _self.locationStatus)
+            ..add('deviceType', _self.deviceType)
+            ..add('simulated', _self.simulated)
+            ..add('locationId', _self.locationId)
+            ..add('location', _self.location)
+            ..add('serialNumber', _self.serialNumber)
+            ..add('availableUpdate', _self.availableUpdate)
+            ..add('batteryLevel', _self.batteryLevel)
+            ..add('ipAddress', _self.ipAddress)
+            ..add('networkStatus', _self.networkStatus)
+            ..add('label', _self.label))
+          .toString();
 }

@@ -80,38 +80,39 @@ mixin _$PaymentIntent {
   }
 
   @override
-  String toString() => (ClassToString('PaymentIntent')
-        ..add('id', _self.id)
-        ..add('created', _self.created)
-        ..add('status', _self.status)
-        ..add('amount', _self.amount)
-        ..add('captureMethod', _self.captureMethod)
-        ..add('currency', _self.currency)
-        ..add('metadata', _self.metadata)
-        ..add('charges', _self.charges)
-        ..add('paymentMethod', _self.paymentMethod)
-        ..add('paymentMethodId', _self.paymentMethodId)
-        ..add('amountDetails', _self.amountDetails)
-        ..add('amountTip', _self.amountTip)
-        ..add('statementDescriptor', _self.statementDescriptor)
-        ..add('statementDescriptorSuffix', _self.statementDescriptorSuffix)
-        ..add('amountCapturable', _self.amountCapturable)
-        ..add('amountReceived', _self.amountReceived)
-        ..add('applicationId', _self.applicationId)
-        ..add('applicationFeeAmount', _self.applicationFeeAmount)
-        ..add('cancellationReason', _self.cancellationReason)
-        ..add('canceledAt', _self.canceledAt)
-        ..add('clientSecret', _self.clientSecret)
-        ..add('confirmationMethod', _self.confirmationMethod)
-        ..add('customerId', _self.customerId)
-        ..add('description', _self.description)
-        ..add('invoiceId', _self.invoiceId)
-        ..add('onBehalfOf', _self.onBehalfOf)
-        ..add('reviewId', _self.reviewId)
-        ..add('receiptEmail', _self.receiptEmail)
-        ..add('setupFutureUsage', _self.setupFutureUsage)
-        ..add('transferGroup', _self.transferGroup))
-      .toString();
+  String toString() =>
+      (ClassToString('PaymentIntent')
+            ..add('id', _self.id)
+            ..add('created', _self.created)
+            ..add('status', _self.status)
+            ..add('amount', _self.amount)
+            ..add('captureMethod', _self.captureMethod)
+            ..add('currency', _self.currency)
+            ..add('metadata', _self.metadata)
+            ..add('charges', _self.charges)
+            ..add('paymentMethod', _self.paymentMethod)
+            ..add('paymentMethodId', _self.paymentMethodId)
+            ..add('amountDetails', _self.amountDetails)
+            ..add('amountTip', _self.amountTip)
+            ..add('statementDescriptor', _self.statementDescriptor)
+            ..add('statementDescriptorSuffix', _self.statementDescriptorSuffix)
+            ..add('amountCapturable', _self.amountCapturable)
+            ..add('amountReceived', _self.amountReceived)
+            ..add('applicationId', _self.applicationId)
+            ..add('applicationFeeAmount', _self.applicationFeeAmount)
+            ..add('cancellationReason', _self.cancellationReason)
+            ..add('canceledAt', _self.canceledAt)
+            ..add('clientSecret', _self.clientSecret)
+            ..add('confirmationMethod', _self.confirmationMethod)
+            ..add('customerId', _self.customerId)
+            ..add('description', _self.description)
+            ..add('invoiceId', _self.invoiceId)
+            ..add('onBehalfOf', _self.onBehalfOf)
+            ..add('reviewId', _self.reviewId)
+            ..add('receiptEmail', _self.receiptEmail)
+            ..add('setupFutureUsage', _self.setupFutureUsage)
+            ..add('transferGroup', _self.transferGroup))
+          .toString();
 }
 
 mixin _$PaymentIntentParameters {
@@ -160,24 +161,25 @@ mixin _$PaymentIntentParameters {
   }
 
   @override
-  String toString() => (ClassToString('PaymentIntentParameters')
-        ..add('amount', _self.amount)
-        ..add('currency', _self.currency)
-        ..add('captureMethod', _self.captureMethod)
-        ..add('paymentMethodTypes', _self.paymentMethodTypes)
-        ..add('metadata', _self.metadata)
-        ..add('description', _self.description)
-        ..add('statementDescriptor', _self.statementDescriptor)
-        ..add('statementDescriptorSuffix', _self.statementDescriptorSuffix)
-        ..add('receiptEmail', _self.receiptEmail)
-        ..add('customerId', _self.customerId)
-        ..add('applicationFeeAmount', _self.applicationFeeAmount)
-        ..add('transferDataDestination', _self.transferDataDestination)
-        ..add('transferGroup', _self.transferGroup)
-        ..add('onBehalfOf', _self.onBehalfOf)
-        ..add('setupFutureUsage', _self.setupFutureUsage)
-        ..add('paymentMethodOptionsParameters', _self.paymentMethodOptionsParameters))
-      .toString();
+  String toString() =>
+      (ClassToString('PaymentIntentParameters')
+            ..add('amount', _self.amount)
+            ..add('currency', _self.currency)
+            ..add('captureMethod', _self.captureMethod)
+            ..add('paymentMethodTypes', _self.paymentMethodTypes)
+            ..add('metadata', _self.metadata)
+            ..add('description', _self.description)
+            ..add('statementDescriptor', _self.statementDescriptor)
+            ..add('statementDescriptorSuffix', _self.statementDescriptorSuffix)
+            ..add('receiptEmail', _self.receiptEmail)
+            ..add('customerId', _self.customerId)
+            ..add('applicationFeeAmount', _self.applicationFeeAmount)
+            ..add('transferDataDestination', _self.transferDataDestination)
+            ..add('transferGroup', _self.transferGroup)
+            ..add('onBehalfOf', _self.onBehalfOf)
+            ..add('setupFutureUsage', _self.setupFutureUsage)
+            ..add('paymentMethodOptionsParameters', _self.paymentMethodOptionsParameters))
+          .toString();
 }
 
 mixin _$PaymentMethodOptionsParameters {
@@ -196,7 +198,7 @@ mixin _$PaymentMethodOptionsParameters {
   }
 
   @override
-  String toString() => (ClassToString('PaymentMethodOptionsParameters')
-        ..add('cardPresentParameters', _self.cardPresentParameters))
-      .toString();
+  String toString() =>
+      (ClassToString('PaymentMethodOptionsParameters')
+        ..add('cardPresentParameters', _self.cardPresentParameters)).toString();
 }

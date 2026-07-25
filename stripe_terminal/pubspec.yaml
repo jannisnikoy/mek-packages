@@ -21,6 +21,8 @@ scripts:
   # To generate *.g.dart files
   generate-code: dart run build_runner watch --delete-conflicting-outputs
 
+  format: dart format .
+
   publish: dart pub publish
 
   # To recreate a project

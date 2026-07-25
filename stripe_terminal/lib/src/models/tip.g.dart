@@ -40,6 +40,6 @@ mixin _$TippingConfiguration {
 
   @override
   String toString() =>
-      (ClassToString('TippingConfiguration')..add('eligibleAmount', _self.eligibleAmount))
-          .toString();
+      (ClassToString('TippingConfiguration')
+        ..add('eligibleAmount', _self.eligibleAmount)).toString();
 }

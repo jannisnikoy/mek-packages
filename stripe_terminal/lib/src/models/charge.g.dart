@@ -40,16 +40,17 @@ mixin _$Charge {
   }
 
   @override
-  String toString() => (ClassToString('Charge')
-        ..add('amount', _self.amount)
-        ..add('currency', _self.currency)
-        ..add('status', _self.status)
-        ..add('paymentMethodDetails', _self.paymentMethodDetails)
-        ..add('description', _self.description)
-        ..add('id', _self.id)
-        ..add('metadata', _self.metadata)
-        ..add('statementDescriptorSuffix', _self.statementDescriptorSuffix)
-        ..add('calculatedStatementDescriptor', _self.calculatedStatementDescriptor)
-        ..add('authorizationCode', _self.authorizationCode))
-      .toString();
+  String toString() =>
+      (ClassToString('Charge')
+            ..add('amount', _self.amount)
+            ..add('currency', _self.currency)
+            ..add('status', _self.status)
+            ..add('paymentMethodDetails', _self.paymentMethodDetails)
+            ..add('description', _self.description)
+            ..add('id', _self.id)
+            ..add('metadata', _self.metadata)
+            ..add('statementDescriptorSuffix', _self.statementDescriptorSuffix)
+            ..add('calculatedStatementDescriptor', _self.calculatedStatementDescriptor)
+            ..add('authorizationCode', _self.authorizationCode))
+          .toString();
 }
