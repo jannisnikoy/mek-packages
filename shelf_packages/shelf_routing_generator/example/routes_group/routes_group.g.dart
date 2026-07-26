@@ -13,7 +13,9 @@ Router _$RoutesGroupControllerRouter(RoutesGroupController service) =>
       return service.sync(request);
     });
 
-Router _$RoutesGroupWithPrefixControllerRouter(RoutesGroupWithPrefixController service) =>
-    Router()..add('GET', '/', (Request request) async {
-      return service.sync(request);
-    });
+Router _$RoutesGroupWithPrefixControllerRouter(
+  RoutesGroupWithPrefixController service,
+) => Router()
+  ..add('GET', '/', (Request request) async {
+    return service.sync(request);
+  });
