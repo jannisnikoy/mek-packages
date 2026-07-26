@@ -6,12 +6,14 @@ homepage: https://github.com/BreX900/mek-packages/tree/main/shelf_packages/open_
 version: 1.3.0
 
 environment:
-  sdk: ^3.8.0
+  sdk: ^3.12.0
 
 scripts:
   generate-library: index_generator
   # To generate .g files:
   generate-code: dart run build_runner watch --delete-conflicting-outputs --verbose
+
+  format: dart format .
 
   publish: dart pub publish
 
