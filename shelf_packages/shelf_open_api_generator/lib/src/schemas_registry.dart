@@ -10,9 +10,9 @@ import 'package:shelf_open_api_generator/src/utils/utils.dart';
 import 'package:source_gen/source_gen.dart';
 
 class SchemasRegistry {
-  static final _dateTimeType = TypeChecker.typeNamed(DateTime, inSdk: true);
-  static final _uriType = TypeChecker.typeNamed(Uri, inSdk: true);
-  static final _decimalType = TypeChecker.any([
+  static const _dateTimeType = TypeChecker.typeNamed(DateTime, inSdk: true);
+  static const _uriType = TypeChecker.typeNamed(Uri, inSdk: true);
+  static const _decimalType = TypeChecker.any([
     TypeChecker.typeNamedLiterally('Decimal', inPackage: 'decimal'),
     TypeChecker.typeNamedLiterally('Rational', inPackage: 'rational'),
     TypeChecker.typeNamedLiterally('Fixed', inPackage: 'fixed'),
@@ -55,7 +55,7 @@ class SchemasRegistry {
         _elements[identifier] = element;
         _schemas[identifier] =
             _buildComplexSchema(context, doc, element.thisType) ??
-            SchemaOpenApi(description: 'Unknown value type.');
+            const SchemaOpenApi(description: 'Unknown value type.');
       }
       return SchemaRef.from(identifier);
     }
@@ -181,7 +181,6 @@ class SchemasRegistry {
         type: TypeOpenApi.object,
         description: doc.summaryAndDescription,
         example: doc.example,
-        format: null,
         required: properties
             .where((e) => e.isRequired)
             .map((e) => names[e.name] ?? e.name)
@@ -198,7 +197,7 @@ class SchemasRegistry {
                   ),
                   property.type,
                 ) ??
-                SchemaOpenApi(description: 'Unknown value type.'),
+                const SchemaOpenApi(description: 'Unknown value type.'),
         },
       );
     }

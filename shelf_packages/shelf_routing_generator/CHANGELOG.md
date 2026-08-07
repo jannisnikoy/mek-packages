@@ -1,4 +1,7 @@
 
+## 3.0.1
+- build: require `analyzer: '>=10.0.0 <15.0.0'`
+
 ## 3.0.0
 - fix!: a camel case is used for query parameter 
 - feat: allow Dart `Set` type

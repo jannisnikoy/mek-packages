@@ -100,6 +100,7 @@ class RoutingGenerator extends Generator {
       :bodyParameter,
       :headers,
       :queryParameters,
+      :isAsync,
       :returns,
     ) = __;
 
@@ -143,9 +144,7 @@ class RoutingGenerator extends Generator {
     }).join();
 
     var methodInvocation = '';
-    if (element.returnType.isDartAsyncFutureOr || element.returnType.isDartAsyncFuture) {
-      methodInvocation += 'await ';
-    }
+    if (returns.isAsync) methodInvocation += 'await ';
     methodInvocation += 'service.${element.displayName}($methodParamsText)';
 
     final responseCode = switch (returns) {
@@ -158,13 +157,13 @@ class RoutingGenerator extends Generator {
 
     if (verb == r'$all') {
       return '''
-  ..all(${literalString(path)}, ($routeParams) async {$headersCode
+  ..all(${literalString(path)}, ($routeParams)${isAsync ? ' async' : ''} {$headersCode
     $responseCode
   })''';
     }
 
     return '''
-  ..add('$verb', ${literalString(path)}, ($routeParams) async {$headersCode
+  ..add('$verb', ${literalString(path)}, ($routeParams)${isAsync ? ' async' : ''} {$headersCode
     $responseCode
   })''';
   }

@@ -17,7 +17,6 @@ class BuildSchemaClass with ContextMixin {
 
   Reference call(String name, SchemaOrRef schemaOrRef) {
     final schema = schemaOrRef.resolve(components);
-    // ignore: parameter_assignments
     name = switch (schemaOrRef) {
       SchemaOpenApi() => schema.name ?? schema.title ?? name,
       SchemaRef() => schemaOrRef.ref.split('/').last,

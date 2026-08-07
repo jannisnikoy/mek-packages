@@ -1,7 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-
-// ignore: unnecessary_library_directive
-library open_api_client_generator;
+library;
 
 export 'src/api_specs.dart';
 export 'src/builders/build_api_class.dart';

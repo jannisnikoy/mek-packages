@@ -44,7 +44,7 @@ Future<T> $readBodyAs<T>(Request request, T Function(Object? data) converter) as
 /// Generator utils
 Future<String> $readBodyAsString(Request request) async {
   try {
-    return request.readAsString();
+    return await request.readAsString();
   } catch (error, stackTrace) {
     throw BadRequestException.body(error, stackTrace);
   }

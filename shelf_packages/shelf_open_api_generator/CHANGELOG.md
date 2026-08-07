@@ -1,4 +1,7 @@
 
+## 3.3.1
+- build: require `analyzer: '>=10.0.0 <15.0.0'`
+
 ## 3.3.0
 - feat: allow Dart `Set` type
 - feat: added support to `Decimal`, `Rational` and `Fixed` types

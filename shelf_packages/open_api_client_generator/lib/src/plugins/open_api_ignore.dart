@@ -17,7 +17,7 @@ class OpenApiIgnore with Plugin {
 
     final lines = overrideFile.readAsStringSync().split('\n');
     final paths = specifications['paths'] as Map;
-    return {...specifications, 'paths': Map.fromEntries(lines.map((e) => MapEntry(e, paths[e]!)))};
+    return {...specifications, 'paths': Map.fromEntries(lines.map((e) => MapEntry(e, paths[e])))};
   }
 }
 

@@ -2,7 +2,6 @@ import 'dart:convert';
 
 abstract class FileUtils {
   static String yamlFrom(Object? json) {
-    // ignore: avoid_dynamic_calls
     return YamlEncoder(toEncodable: (vl) => (vl as dynamic)?.toJson()).convert(json);
     // return json2yaml(_jsonToYaml(json));
   }

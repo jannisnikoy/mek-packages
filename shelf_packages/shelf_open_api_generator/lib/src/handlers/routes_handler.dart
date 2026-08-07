@@ -15,14 +15,14 @@ import 'package:shelf_open_api_generator/src/utils/yaml_encoder.dart';
 import 'package:source_gen/source_gen.dart';
 
 class OpenApiHandler {
-  static final _openApiFileChecker = TypeChecker.typeNamed(
+  static const _openApiFileChecker = TypeChecker.typeNamed(
     OpenApiFile,
     inPackage: 'shelf_open_api',
   );
-  static final _jsonEncoder = JsonEncoder();
+  static const _jsonEncoder = JsonEncoder();
   static final _yamlEncoder = YamlEncoder(
     shouldMultilineStringInBlock: false,
-    toEncodable: (o) => o.toJson(),
+    toEncodable: (o) => (o as dynamic).toJson(),
   );
 
   final Config config;
@@ -104,7 +104,7 @@ class OpenApiHandler {
   }
 
   List<TagOpenApi> _buildTags(List<OpenRouteHandler> routes) {
-    return routes.map((e) => e.element.enclosingElement as ClassElement).toSet().map((e) {
+    return routes.map((e) => e.element.enclosingElement! as ClassElement).toSet().map((e) {
       return TagOpenApi(name: e.displayName, description: Doc.clean(e.documentationComment));
     }).toList();
   }

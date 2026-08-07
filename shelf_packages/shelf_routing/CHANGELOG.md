@@ -1,4 +1,7 @@
 
+## 1.1.1
+- fix: wait `Request.readAsString` finish to catch errors 
+
 ## 1.1.0
 - chore: added utils method `$readBodyAsString` for generated file
 

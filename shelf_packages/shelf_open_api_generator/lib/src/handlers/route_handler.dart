@@ -37,7 +37,7 @@ class OpenRouteHandler {
   });
 
   OperationOpenApi buildOperation() {
-    final classElement = element.enclosingElement as ClassElement;
+    final classElement = element.enclosingElement! as ClassElement;
     final doc = Doc.from(element.documentationComment);
 
     return OperationOpenApi(
@@ -62,7 +62,7 @@ class OpenRouteHandler {
           object: false,
           iterables: false,
           dartType: parameter.type,
-          fallback: SchemaOpenApi(type: TypeOpenApi.string),
+          fallback: const SchemaOpenApi(type: TypeOpenApi.string),
         ),
       );
     });
@@ -78,7 +78,7 @@ class OpenRouteHandler {
             schema: schemasRegistry.register(
               object: false,
               dartType: parameter.type,
-              fallback: SchemaOpenApi(type: TypeOpenApi.string),
+              fallback: const SchemaOpenApi(type: TypeOpenApi.string),
             ),
           );
         }) ??
@@ -90,7 +90,7 @@ class OpenRouteHandler {
             schema: schemasRegistry.register(
               object: false,
               dartType: parameter.type,
-              fallback: SchemaOpenApi(type: TypeOpenApi.string),
+              fallback: const SchemaOpenApi(type: TypeOpenApi.string),
             ),
           );
         });
@@ -123,12 +123,12 @@ class OpenRouteHandler {
       description: 'Operation completed!',
       content: switch (handler.returns) {
         RouteReturnsVoid() => null,
-        RouteReturnsResponse() || RouteReturnsBytes() => GroupMediaOpenApi(
+        RouteReturnsResponse() || RouteReturnsBytes() => const GroupMediaOpenApi(
           octetStream: MediaOpenApi(
             schema: SchemaOpenApi(type: TypeOpenApi.string, format: FormatOpenApi.binary),
           ),
         ),
-        RouteReturnsText() => GroupMediaOpenApi(
+        RouteReturnsText() => const GroupMediaOpenApi(
           textPlain: MediaOpenApi(schema: SchemaOpenApi(type: TypeOpenApi.string)),
         ),
         RouteReturnsJsonResponse(:final type) || RouteReturnsJson(:final type) =>
@@ -147,15 +147,15 @@ class OpenRouteHandler {
 }
 
 class OpenRouteFinder {
-  static final _openApiRouteHttpChecker = TypeChecker.typeNamed(
+  static const _openApiRouteHttpChecker = TypeChecker.typeNamed(
     OpenApiRouteHttp,
     inPackage: 'shelf_open_api',
   );
-  static final _openApiRouteMountChecker = TypeChecker.typeNamed(
+  static const _openApiRouteMountChecker = TypeChecker.typeNamed(
     OpenApiRouteMount,
     inPackage: 'shelf_open_api',
   );
-  static final _openApiRouteIgnoreChecker = TypeChecker.typeNamed(
+  static const _openApiRouteIgnoreChecker = TypeChecker.typeNamed(
     OpenApiRouteIgnore,
     inPackage: 'shelf_open_api',
   );
@@ -181,7 +181,7 @@ class OpenRouteFinder {
 
           ClassElement? classElement;
           if (serviceType != null) classElement = serviceType.element as ClassElement?;
-          if (isRouterMixin) classElement = element.returnType.element as ClassElement;
+          if (isRouterMixin) classElement = element.returnType.element! as ClassElement;
           if (classElement == null) return;
 
           yield* _find(classElement, pathPrefix: path);

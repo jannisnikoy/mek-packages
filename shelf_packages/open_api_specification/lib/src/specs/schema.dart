@@ -1,3 +1,5 @@
+// ignore_for_file: unintended_html_in_doc_comment
+
 import 'package:json_annotation/json_annotation.dart';
 import 'package:open_api_specification/src/specs/base_specs.dart';
 import 'package:open_api_specification/src/specs/ref_or_specs.dart';

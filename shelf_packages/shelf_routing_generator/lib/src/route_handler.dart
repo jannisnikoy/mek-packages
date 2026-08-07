@@ -108,6 +108,8 @@ class HttpRouteHandler extends RouteHandler {
   final List<FormalParameterElement> queryParameters;
   final RouteReturns returns;
 
+  bool get isAsync => bodyParameter != null || returns.isAsync;
+
   static HttpRouteHandler? from(MethodElement element, {bool strict = true}) {
     final route = _Route.from(element);
     if (route == null) return null;
@@ -279,29 +281,34 @@ class HttpRouteHandler extends RouteHandler {
   }
 
   static RouteReturns _parseReturnsType(MethodElement element) {
+    var isAsync = false;
     var type = element.returnType;
     if (type.isDartAsyncFuture || type.isDartAsyncFuture) {
+      isAsync = true;
       type = (type as InterfaceType).typeArguments.single;
     }
     if (responseChecker.isAssignableFromType(type)) {
       if (jsonResponseChecker.isAssignableFromType(type)) {
-        return RouteReturnsJsonResponse((type as InterfaceType).typeArguments.single);
+        return RouteReturnsJsonResponse(
+          isAsync: isAsync,
+          (type as InterfaceType).typeArguments.single,
+        );
       }
-      return const RouteReturnsResponse();
+      return RouteReturnsResponse(isAsync: isAsync);
     }
 
     if (type is VoidType) {
-      return const RouteReturnsVoid();
+      return RouteReturnsVoid(isAsync: isAsync);
     }
     if (type.isDartAsyncStream || bytesChecker.isAssignableFromType(type)) {
-      return const RouteReturnsBytes();
+      return RouteReturnsBytes(isAsync: isAsync);
     }
     if (type.isJson) {
-      return RouteReturnsJson(type);
+      return RouteReturnsJson(isAsync: isAsync, type);
     }
     if (type is InterfaceType ? type.getMethod('toJson') : null case final toJsonMethod?
         when toJsonMethod.returnType.isJson && toJsonMethod.formalParameters.isEmpty) {
-      return RouteReturnsJson(type);
+      return RouteReturnsJson(isAsync: isAsync, type);
     }
 
     throw InvalidGenerationSourceError(
@@ -326,35 +333,37 @@ class HttpRouteHandler extends RouteHandler {
 }
 
 sealed class RouteReturns {
-  const RouteReturns();
+  final bool isAsync;
+
+  const RouteReturns({required this.isAsync});
 }
 
 class RouteReturnsVoid extends RouteReturns {
-  const RouteReturnsVoid();
+  const RouteReturnsVoid({required super.isAsync});
 }
 
 class RouteReturnsResponse extends RouteReturns {
-  const RouteReturnsResponse();
+  const RouteReturnsResponse({required super.isAsync});
 }
 
 class RouteReturnsJsonResponse extends RouteReturns {
   final DartType type;
 
-  const RouteReturnsJsonResponse(this.type);
+  const RouteReturnsJsonResponse(this.type, {required super.isAsync});
 }
 
 class RouteReturnsBytes extends RouteReturns {
-  const RouteReturnsBytes();
+  const RouteReturnsBytes({required super.isAsync});
 }
 
 class RouteReturnsText extends RouteReturns {
-  const RouteReturnsText();
+  const RouteReturnsText({required super.isAsync});
 }
 
 class RouteReturnsJson extends RouteReturns {
   final DartType type;
 
-  const RouteReturnsJson(this.type);
+  const RouteReturnsJson(this.type, {required super.isAsync});
 }
 
 sealed class RouteAccept {
