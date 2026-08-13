@@ -7,11 +7,14 @@ environment:
   sdk: '>=3.7.0 <4.0.0'
   flutter: '>=3.29.0'
 
+scripts:
+  recreate-project: flutter create .
+
 dependencies:
   flutter:
     sdk: flutter
 
-  permission_handler: ^13.0.1
+  permission_handler: ^12.0.3
   mek_stripe_terminal:
     path: ./..
 

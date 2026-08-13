@@ -65,15 +65,12 @@ import mek.stripeterminal.plugin.TerminalErrorHandler
 
 class TerminalPlugin : FlutterPlugin, ActivityAware {
     companion object {
-        var context: Context? = null
+        private var context: Context? = null
+        private var handlerOwner: TerminalPlugin? = null
     }
 
     private lateinit var platform: TerminalPlatformPlugin
     private lateinit var discoverReadersController: DiscoverReadersControllerApi
-
-    companion object {
-        private var handlerOwner: TerminalPlugin? = null
-    }
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         context = binding.applicationContext

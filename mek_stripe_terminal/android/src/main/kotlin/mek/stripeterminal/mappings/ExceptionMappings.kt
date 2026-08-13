@@ -19,18 +19,18 @@ fun TerminalExceptionApi.toPlatformError(): PlatformError {
 fun TerminalException.toApi(): TerminalExceptionApi {
     var code = errorCode.toApiCode()
 
-    if (errorMessage.contains("unexpected reader failure", ignoreCase = true) ||
-        errorMessage.contains("nfc", ignoreCase = true)) {
-        try {
-            val ctx = TerminalPlugin.context
-            if (ctx != null) {
-                val nfcAdapter = NfcAdapter.getDefaultAdapter(ctx)
-                if (nfcAdapter != null && !nfcAdapter.isEnabled) {
-                    code = TerminalExceptionCodeApi.NFC_DISABLED
-                }
-            }
-        } catch (ignored: Exception) {}
-    }
+//    if (errorMessage.contains("unexpected reader failure", ignoreCase = true) ||
+//        errorMessage.contains("nfc", ignoreCase = true)) {
+//        try {
+//            val ctx = TerminalPlugin.context
+//            if (ctx != null) {
+//                val nfcAdapter = NfcAdapter.getDefaultAdapter(ctx)
+//                if (nfcAdapter != null && !nfcAdapter.isEnabled) {
+//                    code = TerminalExceptionCodeApi.NFC_DISABLED
+//                }
+//            }
+//        } catch (ignored: Exception) {}
+//    }
 
     return TerminalExceptionApi(
         code = code ?: TerminalExceptionCodeApi.UNKNOWN,
