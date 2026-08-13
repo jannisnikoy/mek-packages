@@ -8,8 +8,8 @@ topics:
   - mek-packages
 
 environment:
-  sdk: '>=3.7.0 <4.0.0'
-  flutter: '>=3.29.0'
+  sdk: '>=3.12.0 <4.0.0'
+  flutter: '>=3.44.0'
 
 scripts:
   bootstrap: dart pub global activate index_generator 4.0.0
@@ -26,7 +26,7 @@ scripts:
   publish: dart pub publish
 
   # To recreate a project
-  recreate-project: flutter create . --platforms=android,ios --project-name=stripe_terminal --template=plugin --org=mek
+  recreate-project: flutter create . --platforms=android --project-name=stripe_terminal --template=plugin --org=mek
 
 dependencies:
   flutter: { sdk: flutter }

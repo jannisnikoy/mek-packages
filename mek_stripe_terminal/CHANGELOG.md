@@ -1,3 +1,8 @@
+
+- build(android): update minimum supported Android version to 26
+- build(android): added support for built-in kotlin and migrate .gradle to .gradle.kts
+- build: bumped flutter to `^3.44.0` and dart to `3.12.0`
+
 ## 5.6.0
 
 - chore!: renamed `Terminal.initTerminal` to `Terminal.init`
