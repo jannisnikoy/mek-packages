@@ -1,5 +1,6 @@
 package mek.stripeterminal.plugin
 
+import TerminalHandlersApi
 import com.stripe.stripeterminal.external.callable.Cancelable
 import com.stripe.stripeterminal.external.callable.AppsOnDevicesListener
 import com.stripe.stripeterminal.external.callable.InternetReaderListener
@@ -13,10 +14,10 @@ import com.stripe.stripeterminal.external.models.ReaderEvent
 import com.stripe.stripeterminal.external.models.ReaderInputOptions
 import com.stripe.stripeterminal.external.models.ReaderSoftwareUpdate
 import com.stripe.stripeterminal.external.models.TerminalException
-import mek.stripeterminal.api.TerminalHandlersApi
 import mek.stripeterminal.mappings.toApi
 import mek.stripeterminal.runOnMainThread
 import com.stripe.stripeterminal.external.callable.Callback
+import mek.stripeterminal.mappings.mapExceptionToApi
 
 class ReaderDelegatePlugin(private val _handlers: TerminalHandlersApi) :
     MobileReaderListener, AppsOnDevicesListener, InternetReaderListener, TapToPayReaderListener {
@@ -38,7 +39,7 @@ class ReaderDelegatePlugin(private val _handlers: TerminalHandlersApi) :
     // ReaderListenable
 
     override fun onReportReaderEvent(event: ReaderEvent) = runOnMainThread {
-        _handlers.readerReportEvent(event.toApi())
+        _handlers.readerReportEvent(event.toApi()) {}
     }
 
     // ReaderReconnectionListener
@@ -46,32 +47,32 @@ class ReaderDelegatePlugin(private val _handlers: TerminalHandlersApi) :
     override fun onReaderReconnectStarted(reader: Reader, cancelReconnect: Cancelable, reason: DisconnectReason) =
         runOnMainThread {
             this.cancelableReconnect = cancelReconnect
-            _handlers.readerReconnectStarted(reader.toApi(), reason.toApi())
+            _handlers.readerReconnectStarted(reader.toApi(), reason.toApi()) {}
         }
 
     override fun onReaderReconnectFailed(reader: Reader) = runOnMainThread {
         cancelableReconnect = null
-        _handlers.readerReconnectFailed(reader.toApi())
+        _handlers.readerReconnectFailed(reader.toApi()) {}
     }
 
     override fun onReaderReconnectSucceeded(reader: Reader) = runOnMainThread {
         cancelableReconnect = null
-        _handlers.readerReconnectSucceeded(reader.toApi())
+        _handlers.readerReconnectSucceeded(reader.toApi()) {}
     }
     // ReaderDisconnectListener
 
     override fun onDisconnect(reason: DisconnectReason) = runOnMainThread {
-        _handlers.disconnect(reason.toApi())
+        _handlers.disconnect(reason.toApi()) {}
     }
 
     // MobileReaderListener
 
     override fun onRequestReaderDisplayMessage(message: ReaderDisplayMessage) = runOnMainThread {
-        _handlers.readerRequestDisplayMessage(message.toApi())
+        _handlers.readerRequestDisplayMessage(message.toApi()) {}
     }
 
     override fun onRequestReaderInput(options: ReaderInputOptions) = runOnMainThread {
-        _handlers.readerRequestInput(options.options.mapNotNull { it.toApi() })
+        _handlers.readerRequestInput(options.options.mapNotNull { it.toApi() }) {}
     }
 
     override fun onBatteryLevelUpdate(
@@ -80,33 +81,36 @@ class ReaderDelegatePlugin(private val _handlers: TerminalHandlersApi) :
         isCharging: Boolean
     ) = runOnMainThread {
         _handlers.readerBatteryLevelUpdate(
-            batteryLevel = batteryLevel.toDouble(),
-            batteryStatus = batteryStatus.toApi(),
-            isCharging = isCharging
-        )
+            batteryLevelArg = batteryLevel.toDouble(),
+            batteryStatusArg = batteryStatus.toApi(),
+            isChargingArg = isCharging
+        ) {}
     }
 
     override fun onReportLowBatteryWarning() = runOnMainThread {
-        _handlers.readerReportLowBatteryWarning()
+        _handlers.readerReportLowBatteryWarning() {}
     }
 
     override fun onReportAvailableUpdate(update: ReaderSoftwareUpdate) = runOnMainThread {
-        _handlers.readerReportAvailableUpdate(update.toApi())
+        _handlers.readerReportAvailableUpdate(update.toApi()) {}
     }
 
     override fun onStartInstallingUpdate(update: ReaderSoftwareUpdate, cancelable: Cancelable?) =
         runOnMainThread {
             this.cancelableUpdate = cancelable
-            _handlers.readerStartInstallingUpdate(update.toApi())
+            _handlers.readerStartInstallingUpdate(update.toApi()) {}
         }
 
     override fun onReportReaderSoftwareUpdateProgress(progress: Float) = runOnMainThread {
-        _handlers.readerReportSoftwareUpdateProgress(progress.toDouble())
+        _handlers.readerReportSoftwareUpdateProgress(progress.toDouble()) {}
     }
 
     override fun onFinishInstallingUpdate(update: ReaderSoftwareUpdate?, e: TerminalException?) =
         runOnMainThread {
             cancelableUpdate = null
-            _handlers.readerFinishInstallingUpdate(update?.toApi(), e?.toApi())
+            _handlers.readerFinishInstallingUpdate(
+                update?.toApi(),
+                if (e != null) mapExceptionToApi(e) else null
+            ) {}
         }
 }

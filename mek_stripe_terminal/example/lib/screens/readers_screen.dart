@@ -62,7 +62,7 @@ class _ReadersScreenState extends ConsumerState<ReadersScreen> with StateTools {
       DiscoveryMethod.bluetoothProximity => BluetoothProximityDiscoveryConfiguration(
         isSimulated: _isSimulated,
       ),
-      DiscoveryMethod.appsOnDevices => const AppsOnDevicesDiscoveryConfiguration(),
+      DiscoveryMethod.appsOnDevices => AppsOnDevicesDiscoveryConfiguration(),
       DiscoveryMethod.internet => InternetDiscoveryConfiguration(isSimulated: _isSimulated),
       DiscoveryMethod.tapToPay => TapToPayDiscoveryConfiguration(isSimulated: _isSimulated),
       DiscoveryMethod.usb => UsbDiscoveryConfiguration(isSimulated: _isSimulated),
@@ -96,7 +96,8 @@ class _ReadersScreenState extends ConsumerState<ReadersScreen> with StateTools {
     }
 
     try {
-      final connectionConfiguration = switch (_discoveryMethod) {
+      // ignore: omit_local_variable_types
+      final ConnectionConfiguration connectionConfiguration = switch (_discoveryMethod) {
         DiscoveryMethod.bluetoothScan ||
         DiscoveryMethod.bluetoothProximity => BluetoothConnectionConfiguration(
           locationId: getLocationId(),
@@ -162,24 +163,21 @@ class _ReadersScreenState extends ConsumerState<ReadersScreen> with StateTools {
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: DropdownButtonFormField<DiscoveryMethod>(
                 initialValue: _discoveryMethod,
-                onChanged:
-                    !isMutating && connectionStatus == ConnectionStatus.notConnected
-                        ? _changeDiscoveryMethod
-                        : null,
+                onChanged: !isMutating && connectionStatus == ConnectionStatus.notConnected
+                    ? _changeDiscoveryMethod
+                    : null,
                 isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Discovery method'),
-                items:
-                    DiscoveryMethod.values.map((e) {
-                      return DropdownMenuItem(value: e, child: Text(e.name));
-                    }).toList(),
+                items: DiscoveryMethod.values.map((e) {
+                  return DropdownMenuItem(value: e, child: Text(e.name));
+                }).toList(),
               ),
             ),
             if (_discoveryMethod.canSimulate)
               SwitchListTile(
-                onChanged:
-                    !isMutating && connectionStatus == ConnectionStatus.notConnected
-                        ? (_) => mutate(_changeMode)
-                        : null,
+                onChanged: !isMutating && connectionStatus == ConnectionStatus.notConnected
+                    ? (_) => mutate(_changeMode)
+                    : null,
                 value: _isSimulated,
                 title: const Text('Is simulate scanning mode?'),
               ),
@@ -191,18 +189,16 @@ class _ReadersScreenState extends ConsumerState<ReadersScreen> with StateTools {
               )
             else if (_discoverReaderSub == null)
               FilledButton(
-                onPressed:
-                    !isMutating && connectionStatus == ConnectionStatus.notConnected
-                        ? _startDiscoverReaders
-                        : null,
+                onPressed: !isMutating && connectionStatus == ConnectionStatus.notConnected
+                    ? _startDiscoverReaders
+                    : null,
                 child: const Text('Scan Devices'),
               )
             else
               FilledButton(
-                onPressed:
-                    !isMutating && connectionStatus == ConnectionStatus.discovering
-                        ? _stopDiscoverReaders
-                        : null,
+                onPressed: !isMutating && connectionStatus == ConnectionStatus.discovering
+                    ? _stopDiscoverReaders
+                    : null,
                 child: const Text('Stop Scanning'),
               ),
             const Divider(height: 32.0),
@@ -225,22 +221,21 @@ class _ReadersScreenState extends ConsumerState<ReadersScreen> with StateTools {
             if (connectedReader != null) ...[
               const SizedBox(height: 8.0),
               FilledButton.tonal(
-                onPressed:
-                    !isMutating
-                        ? () => mutate(
-                          () async => await Terminal.instance.setReaderDisplay(
-                            const Cart(
-                              currency: K.currency,
-                              tax: 130,
-                              total: 1000,
-                              lineItems: [
-                                CartLineItem(description: 'hello 1', quantity: 1, amount: 500),
-                                CartLineItem(description: 'hello 2', quantity: 1, amount: 500),
-                              ],
-                            ),
+                onPressed: !isMutating
+                    ? () => mutate(
+                        () async => await Terminal.instance.setReaderDisplay(
+                          Cart(
+                            currency: K.currency,
+                            tax: 130,
+                            total: 1000,
+                            lineItems: [
+                              CartLineItem(descriptionX: 'hello 1', quantity: 1, amount: 500),
+                              CartLineItem(descriptionX: 'hello 2', quantity: 1, amount: 500),
+                            ],
                           ),
-                        )
-                        : null,
+                        ),
+                      )
+                    : null,
                 child: const Text('Set reader display'),
               ),
             ],

@@ -2,8 +2,8 @@ package mek.stripeterminal.mappings
 
 import com.stripe.stripeterminal.external.models.Tip
 import com.stripe.stripeterminal.external.models.TippingConfiguration
-import mek.stripeterminal.api.TipApi
-import mek.stripeterminal.api.TippingConfigurationApi
+import TipApi
+import TippingConfigurationApi
 
 fun Tip.toApi(): TipApi {
     return TipApi(

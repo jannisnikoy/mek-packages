@@ -10,8 +10,8 @@ extension ConnectionConfigurationApi {
             )
             .setAutoReconnectOnUnexpectedDisconnect(config.autoReconnectOnUnexpectedDisconnect)
             .build()
-        case let config as HandoffConnectionConfigurationApi:
-            return nil
+       // case let config as HandoffConnectionConfigurationApi:
+            //     return nil
         case let config as InternetConnectionConfigurationApi:
             return try InternetConnectionConfigurationBuilder(
                 delegate: delegate

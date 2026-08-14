@@ -8,19 +8,28 @@ class TerminalDelegatePlugin: NSObject, ConnectionTokenProvider, TerminalDelegat
         self.handlers = handlers
     }
     
-    public func fetchConnectionToken() async throws -> String {
-        return try await self.handlers.requestConnectionToken()
+    func fetchConnectionToken(_ completion: @escaping (String?, (any Error)?) -> Void) {
+        self.handlers.requestConnectionToken { result in
+            switch result {
+                case .success(let token):
+                    completion(token, nil)
+
+                case .failure(let error):
+                    completion(nil, error)
+                }
+        }
     }
 
     public func terminal(_: Terminal, didChangePaymentStatus status: PaymentStatus) {
         DispatchQueue.main.async {
-            self.handlers.paymentStatusChange(paymentStatus: status.toApi())
+            self.handlers.paymentStatusChange(status: status.toApi()) { result in }
         }
     }
 
     public func terminal(_: Terminal, didChangeConnectionStatus status: ConnectionStatus) {
         DispatchQueue.main.async {
-            self.handlers.connectionStatusChange(connectionStatus: status.toApi())
+            self.handlers.connectionStatusChange(status: status.toApi()) { result in }
         }
     }
+
 }

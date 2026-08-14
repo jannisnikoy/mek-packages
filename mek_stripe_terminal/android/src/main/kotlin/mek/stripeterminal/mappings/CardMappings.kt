@@ -9,16 +9,16 @@ import com.stripe.stripeterminal.external.models.CardPresentRoutingOptionParamet
 import com.stripe.stripeterminal.external.models.IncrementalAuthorizationStatus
 import com.stripe.stripeterminal.external.models.ReceiptDetails
 import com.stripe.stripeterminal.external.models.RoutingPriority
-import mek.stripeterminal.api.CardBrandApi
-import mek.stripeterminal.api.CardDetailsApi
-import mek.stripeterminal.api.CardFundingTypeApi
-import mek.stripeterminal.api.CardNetworksApi
-import mek.stripeterminal.api.CardPresentCaptureMethodApi
-import mek.stripeterminal.api.CardPresentDetailsApi
-import mek.stripeterminal.api.CardPresentParametersApi
-import mek.stripeterminal.api.CardPresentRoutingApi
-import mek.stripeterminal.api.IncrementalAuthorizationStatusApi
-import mek.stripeterminal.api.ReceiptDetailsApi
+import CardBrandApi
+import CardDetailsApi
+import CardFundingTypeApi
+import CardNetworksApi
+import CardPresentCaptureMethodApi
+import CardPresentDetailsApi
+import CardPresentParametersApi
+import CardPresentRoutingApi
+import IncrementalAuthorizationStatusApi
+import ReceiptDetailsApi
 
 fun CardDetails.toApi(): CardDetailsApi {
     return CardDetailsApi(

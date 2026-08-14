@@ -1,13 +1,12 @@
 package mek.stripeterminal.mappings
 
 import com.stripe.stripeterminal.external.models.ConnectionConfiguration
-import mek.stripeterminal.api.AppsOnDevicesConnectionConfigurationApi
-import mek.stripeterminal.api.BluetoothConnectionConfigurationApi
-import mek.stripeterminal.api.ConnectionConfigurationApi
-import mek.stripeterminal.api.HandoffConnectionConfigurationApi
-import mek.stripeterminal.api.InternetConnectionConfigurationApi
-import mek.stripeterminal.api.TapToPayConnectionConfigurationApi
-import mek.stripeterminal.api.UsbConnectionConfigurationApi
+import AppsOnDevicesConnectionConfigurationApi
+import BluetoothConnectionConfigurationApi
+import ConnectionConfigurationApi
+import InternetConnectionConfigurationApi
+import TapToPayConnectionConfigurationApi
+import UsbConnectionConfigurationApi
 import mek.stripeterminal.plugin.ReaderDelegatePlugin
 
 fun ConnectionConfigurationApi.toHost(readerDelegate: ReaderDelegatePlugin): ConnectionConfiguration {
@@ -28,9 +27,9 @@ fun ConnectionConfigurationApi.toHost(readerDelegate: ReaderDelegatePlugin): Con
         is AppsOnDevicesConnectionConfigurationApi -> ConnectionConfiguration.AppsOnDevicesConnectionConfiguration(
             appsOnDevicesListener = readerDelegate,
         )
-        is HandoffConnectionConfigurationApi -> ConnectionConfiguration.AppsOnDevicesConnectionConfiguration(
-            appsOnDevicesListener = readerDelegate,
-        )
+//        is HandoffConnectionConfigurationApi -> ConnectionConfiguration.AppsOnDevicesConnectionConfiguration(
+//            appsOnDevicesListener = readerDelegate,
+//        )
         is InternetConnectionConfigurationApi -> ConnectionConfiguration.InternetConnectionConfiguration(
             failIfInUse = failIfInUse,
             internetReaderListener = readerDelegate,

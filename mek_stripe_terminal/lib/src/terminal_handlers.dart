@@ -1,8 +1,15 @@
-part of 'terminal_platform.dart';
+import 'dart:async';
 
-@FlutterApi()
-class TerminalHandlers {
-  final TerminalPlatform _platform;
+import 'package:mek_stripe_terminal/src/models/disconnect_reason.dart';
+import 'package:mek_stripe_terminal/src/models/reader.dart';
+import 'package:mek_stripe_terminal/src/models/reader_software_update.dart';
+import 'package:mek_stripe_terminal/src/reader_delegates.dart';
+import 'package:mek_stripe_terminal/src/terminal.dart';
+import 'package:mek_stripe_terminal/src/terminal_api.g.dart';
+import 'package:mek_stripe_terminal/src/terminal_exception.dart';
+
+class TerminalHandlers implements TerminalHandlersApi {
+  final TerminalPlatformApi _platform;
   Future<String> Function()? fetchToken;
 
   final _connectionStatusChangeController = StreamController<ConnectionStatus>.broadcast();
@@ -15,7 +22,7 @@ class TerminalHandlers {
   Stream<PaymentStatus> get paymentStatusChangeStream => _paymentStatusChangeController.stream;
 
   TerminalHandlers(this._platform) {
-    _$setupTerminalHandlers(this);
+    TerminalHandlersApi.setUp(this);
   }
 
   Future<R> handleReaderConnection<R>(
@@ -35,17 +42,20 @@ class TerminalHandlers {
     _readerDelegate = null;
   }
 
-  @MethodApi(kotlin: MethodApiType.callbacks, swift: MethodApiType.async)
-  Future<String> _onRequestConnectionToken() async => await fetchToken!();
+  @override
+  Future<String> requestConnectionToken() async => await fetchToken!();
 
-  void _onConnectionStatusChange(ConnectionStatus connectionStatus) =>
+  @override
+  void connectionStatusChange(ConnectionStatus connectionStatus) =>
       _connectionStatusChangeController.add(connectionStatus);
 
-  void _onPaymentStatusChange(PaymentStatus paymentStatus) =>
+  @override
+  void paymentStatusChange(PaymentStatus paymentStatus) =>
       _paymentStatusChangeController.add(paymentStatus);
 
   //region ReaderDelegate
-  void _onReaderReportEvent(ReaderEvent event) {
+  @override
+  void readerReportEvent(ReaderEvent event) {
     _runInZone<ReaderDelegate>(_readerDelegate, (delegate) {
       delegate.onReportReaderEvent(event);
     });
@@ -53,19 +63,22 @@ class TerminalHandlers {
   //endregion
 
   //region ReaderReconnectionDelegate
-  void _onReaderReconnectFailed(Reader reader) {
+  @override
+  void readerReconnectFailed(Reader reader) {
     _runInZone<ReaderReconnectionDelegate>(_readerDelegate, (delegate) {
       delegate.onReaderReconnectFailed(reader);
     });
   }
 
-  void _onReaderReconnectStarted(Reader reader, DisconnectReason reason) {
+  @override
+  void readerReconnectStarted(Reader reader, DisconnectReason reason) {
     _runInZone<ReaderReconnectionDelegate>(_readerDelegate, (delegate) {
       delegate.onReaderReconnectStarted(reader, _platform.cancelReaderReconnection, reason);
     });
   }
 
-  void _onReaderReconnectSucceeded(Reader reader) {
+  @override
+  void readerReconnectSucceeded(Reader reader) {
     _runInZone<ReaderReconnectionDelegate>(_readerDelegate, (delegate) {
       delegate.onReaderReconnectSucceeded(reader);
     });
@@ -73,7 +86,8 @@ class TerminalHandlers {
   //endregion
 
   //region ReaderDisconnectDelegate
-  void _onDisconnect(DisconnectReason reason) {
+  @override
+  void disconnect(DisconnectReason reason) {
     _runInZone<ReaderDisconnectDelegate>(_readerDelegate, (delegate) {
       delegate.onDisconnect(reason);
     });
@@ -81,31 +95,39 @@ class TerminalHandlers {
   //endregion
 
   //region ReaderPortableDelegate
-  void _onReaderStartInstallingUpdate(ReaderSoftwareUpdate update) {
+  @override
+  void readerStartInstallingUpdate(ReaderSoftwareUpdate update) {
     _runInZone<ReaderPortableDelegate>(_readerDelegate, (delegate) {
       delegate.onStartInstallingUpdate(update, _platform.cancelReaderUpdate);
     });
   }
 
-  void _onReaderReportSoftwareUpdateProgress(double progress) {
+  @override
+  void readerReportSoftwareUpdateProgress(double progress) {
     _runInZone<ReaderPortableDelegate>(_readerDelegate, (delegate) {
       delegate.onReportReaderSoftwareUpdateProgress(progress);
     });
   }
 
-  void _onReaderFinishInstallingUpdate(ReaderSoftwareUpdate? update, TerminalException? exception) {
+  @override
+  void readerFinishInstallingUpdate(ReaderSoftwareUpdate? update, TerminalExceptionApi? exception) {
     _runInZone<ReaderPortableDelegate>(_readerDelegate, (delegate) {
-      delegate.onFinishInstallingUpdate(update, exception);
+      delegate.onFinishInstallingUpdate(
+        update,
+        exception != null ? TerminalException.fromApi(exception) : null,
+      );
     });
   }
 
-  void _onReaderRequestDisplayMessage(ReaderDisplayMessage message) {
+  @override
+  void readerRequestDisplayMessage(ReaderDisplayMessage message) {
     _runInZone<ReaderPortableDelegate>(_readerDelegate, (delegate) {
       delegate.onRequestReaderDisplayMessage(message);
     });
   }
 
-  void _onReaderRequestInput(List<ReaderInputOption> options) {
+  @override
+  void readerRequestInput(List<ReaderInputOption> options) {
     _runInZone<ReaderPortableDelegate>(_readerDelegate, (delegate) {
       delegate.onRequestReaderInput(options);
     });
@@ -113,7 +135,8 @@ class TerminalHandlers {
   //endregion
 
   //region MobileReaderDelegate
-  void _onReaderBatteryLevelUpdate(
+  @override
+  void readerBatteryLevelUpdate(
     double batteryLevel,
     BatteryStatus? batteryStatus,
     bool isCharging,
@@ -123,13 +146,15 @@ class TerminalHandlers {
     });
   }
 
-  void _onReaderReportLowBatteryWarning() {
+  @override
+  void readerReportLowBatteryWarning() {
     _runInZone<MobileReaderDelegate>(_readerDelegate, (delegate) {
       delegate.onReportLowBatteryWarning();
     });
   }
 
-  void _onReaderReportAvailableUpdate(ReaderSoftwareUpdate update) {
+  @override
+  void readerReportAvailableUpdate(ReaderSoftwareUpdate update) {
     _runInZone<MobileReaderDelegate>(_readerDelegate, (delegate) {
       delegate.onReportAvailableUpdate(update);
     });
@@ -137,7 +162,8 @@ class TerminalHandlers {
   //endRegion
 
   //region TapToPayReaderDelegate
-  void _onReaderAcceptTermsOfService() {
+  @override
+  void readerAcceptTermsOfService() {
     _runInZone<TapToPayReaderDelegate>(_readerDelegate, (delegate) {
       delegate.onAcceptTermsOfService();
     });

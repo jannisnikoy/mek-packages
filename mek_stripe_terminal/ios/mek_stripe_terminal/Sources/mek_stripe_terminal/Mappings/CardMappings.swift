@@ -6,8 +6,8 @@ extension CardDetails {
         return CardDetailsApi(
             brand: brand.toApi(),
             country: country,
-            expMonth: expMonth,
-            expYear: expYear,
+            expMonth: expMonth.toInt64(),
+            expYear: expYear.toInt64(),
             funding: funding.toApi(),
             last4: last4
         )
@@ -65,15 +65,15 @@ extension CardPresentDetails {
     func toApi() -> CardPresentDetailsApi {
         return CardPresentDetailsApi(
             brand: brand.toApi(),
-            cardholderName: cardholderName,
             country: country,
-            emvAuthData: emvAuthData,
-            expMonth: expMonth,
-            expYear: expYear,
+            expMonth: expMonth.toInt64(),
+            expYear: expYear.toInt64(),
             funding: funding.toApi(),
+            last4: last4,
+            cardholderName: cardholderName,
+            emvAuthData: emvAuthData,
             generatedCard: generatedCard,
             incrementalAuthorizationStatus: incrementalAuthorizationStatus.toApi(),
-            last4: last4,
             networks: networks?.toApi(),
             receipt: receipt?.toApi()
         )
@@ -108,13 +108,13 @@ extension ReceiptDetails {
     func toApi() -> ReceiptDetailsApi {
         return ReceiptDetailsApi(
             accountType: accountType,
-            applicationCryptogram: applicationCryptogram,
             applicationPreferredName: applicationPreferredName,
             authorizationCode: authorizationCode,
             authorizationResponseCode: authorizationResponseCode,
+            applicationCryptogram: applicationCryptogram,
             dedicatedFileName: dedicatedFileName,
-            terminalVerificationResults: terminalVerificationResults,
-            transactionStatusInformation: transactionStatusInformation
+            transactionStatusInformation: transactionStatusInformation,
+            terminalVerificationResults: terminalVerificationResults
         )
     }
 }

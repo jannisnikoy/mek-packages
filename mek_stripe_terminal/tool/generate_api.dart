@@ -1,19 +1,30 @@
-import 'package:one_for_all_generator/one_for_all_generator.dart';
+import 'dart:io';
+
+import 'package:pigeon/pigeon.dart';
 
 void main() async {
-  await OneForAll.from(
-    options: const OneForAllOptions(
-      apiFile: 'lib/src/platform/terminal_platform.dart',
-      extraApiFiles: ['lib/src/terminal_exception.dart', 'lib/src/models/discovery_filter.dart'],
-      hostClassSuffix: 'Api',
-      packageName: 'mek_stripe_terminal',
-      codecs: ApiPlatformCodec.values,
-    ),
-    dartOptions: const DartOptions(),
-    kotlinOptions: const KotlinOptions(
-      package: 'mek.stripeterminal.api',
-      outputFile: 'android/src/main/kotlin/mek/stripeterminal/api/TerminalApi.kt',
-    ),
-    swiftOptions: const SwiftOptions(outputFile: 'ios/Classes/Api/TerminalApi.swift'),
-  ).build();
+  const options = PigeonOptions(
+    dartPackageName: 'mek_stripe_terminal',
+    input: 'tool/api_schema.g.dart',
+    dartOut: 'lib/src/terminal_api.g.dart',
+    kotlinOut: 'android/src/main/kotlin/mek/stripeterminal/api/TerminalApi.g.kt',
+    swiftOut: 'ios/mek_stripe_terminal/Sources/mek_stripe_terminal/Api/TerminalApi.g.swift',
+  );
+
+  final entities = Directory('tool/schemas').listSync(recursive: true);
+  final contents = await Future.wait(
+    entities.whereType<File>().map((file) async {
+      final content = await file.readAsString();
+      return content.split('\n').where((line) => !line.startsWith('import ')).join('\n');
+    }),
+  );
+  final input = File(options.input!);
+  input.writeAsStringSync(
+    "import 'package:pigeon/pigeon.dart';\n"
+    '${contents.join('\n')}',
+  );
+
+  await Pigeon.runWithOptions(options);
+
+  input.deleteSync();
 }

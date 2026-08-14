@@ -25,21 +25,21 @@ class ReaderDelegatePlugin: NSObject, ReaderDelegate, MobileReaderDelegate, Inte
     
     func reader(_ reader: Reader, didDisconnect reason: DisconnectReason) {
         DispatchQueue.main.async {
-            self._handlers.disconnect(reason: reason.toApi())
+            self._handlers.disconnect(reason: reason.toApi()) { result in }
         }
     }
     
     func reader(_ reader: Reader, didStartReconnect cancelable: Cancelable, disconnectReason: DisconnectReason) {
         self.cancellableReconnection = cancelable
         DispatchQueue.main.async {
-            self._handlers.readerReconnectStarted(reader: reader.toApi(), reason: disconnectReason.toApi())
+            self._handlers.readerReconnectStarted(reader: reader.toApi(), reason: disconnectReason.toApi()) { result in }
         }
     }
     
     func readerDidSucceedReconnect(_ reader: Reader) {
         cancellableReconnection = nil
         DispatchQueue.main.async {
-            self._handlers.readerReconnectSucceeded(reader: reader.toApi())
+            self._handlers.readerReconnectSucceeded(reader: reader.toApi()) { result in }
         }
     }
     
@@ -47,20 +47,20 @@ class ReaderDelegatePlugin: NSObject, ReaderDelegate, MobileReaderDelegate, Inte
     
     func reader(_ reader: Reader, didReportAvailableUpdate update: ReaderSoftwareUpdate) {
         DispatchQueue.main.async {
-            self._handlers.readerReportAvailableUpdate(update: update.toApi())
+            self._handlers.readerReportAvailableUpdate(update: update.toApi()) { result in }
         }
     }
     
     func reader(_ reader: Reader, didStartInstallingUpdate update: ReaderSoftwareUpdate, cancelable: Cancelable?) {
         cancellableUpdate = cancelable
         DispatchQueue.main.async {
-            self._handlers.readerStartInstallingUpdate(update: update.toApi())
+            self._handlers.readerStartInstallingUpdate(update: update.toApi()) { result in }
         }
     }
     
     func reader(_ reader: Reader, didReportReaderSoftwareUpdateProgress progress: Float) {
         DispatchQueue.main.async {
-            self._handlers.readerReportSoftwareUpdateProgress(progress: Double(progress))
+            self._handlers.readerReportSoftwareUpdateProgress(progress: Double(progress)) { result in }
         }
     }
     
@@ -71,25 +71,25 @@ class ReaderDelegatePlugin: NSObject, ReaderDelegate, MobileReaderDelegate, Inte
             self._handlers.readerFinishInstallingUpdate(
                 update: update?.toApi(),
                 exception: exception
-            )
+            ) { result in }
         }
     }
     
     func reader(_ reader: Reader, didRequestReaderInput inputOptions: ReaderInputOptions = []) {
         DispatchQueue.main.async {
-            self._handlers.readerRequestInput(options: inputOptions.toApi())
+            self._handlers.readerRequestInput(options: inputOptions.toApi()) { result in }
         }
     }
     
     func reader(_ reader: Reader, didRequestReaderDisplayMessage displayMessage: ReaderDisplayMessage) {
         DispatchQueue.main.async {
-            self._handlers.readerRequestDisplayMessage(message: displayMessage.toApi())
+            self._handlers.readerRequestDisplayMessage(message: displayMessage.toApi()) { result in }
         }
     }
         
     func reader(_ reader: Reader, didReportReaderEvent event: ReaderEvent, info: Dictionary<AnyHashable, Any>?) {
         DispatchQueue.main.async {
-            self._handlers.readerReportEvent(event: event.toApi())
+            self._handlers.readerReportEvent(event: event.toApi()) { result in }
         }
     }
     
@@ -99,13 +99,13 @@ class ReaderDelegatePlugin: NSObject, ReaderDelegate, MobileReaderDelegate, Inte
                 batteryLevel: Double(batteryLevel),
                 batteryStatus: status.toApi(),
                 isCharging: isCharging
-            )
+            ) { result in }
         }
     }
     
     func readerDidReportLowBatteryWarning(_ reader: Reader) {
         DispatchQueue.main.async {
-            self._handlers.readerReportLowBatteryWarning()
+            self._handlers.readerReportLowBatteryWarning() { result in }
         }
     }
     
@@ -133,7 +133,7 @@ class ReaderDelegatePlugin: NSObject, ReaderDelegate, MobileReaderDelegate, Inte
     
     func tapToPayReaderDidAcceptTermsOfService(_ reader: Reader) {
         DispatchQueue.main.async {
-            self._handlers.readerAcceptTermsOfService()
+            self._handlers.readerAcceptTermsOfService() { result in }
         }
     }
 }

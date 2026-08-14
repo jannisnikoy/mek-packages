@@ -5,19 +5,19 @@ import StripeTerminal
 extension Reader {
     func toApi() -> ReaderApi {
         return ReaderApi(
+            id: stripeId,
+            locationStatus: locationStatus.toApi(),
+            deviceType: deviceType.toApi(),
+            simulated: simulated,
+            locationId: locationId,
+            location: location?.toApi(),
+            serialNumber: serialNumber,
+            deviceSoftwareVersion: deviceSoftwareVersion,
             availableUpdate: availableUpdate != nil,
             batteryLevel: batteryLevel?.doubleValue ?? -1.0,
-            deviceSoftwareVersion: deviceSoftwareVersion,
-            deviceType: deviceType.toApi(),
-            id: stripeId,
             ipAddress: ipAddress,
-            label: label,
-            location: location?.toApi(),
-            locationId: locationId,
-            locationStatus: locationStatus.toApi(),
             networkStatus: status.toApi(),
-            serialNumber: serialNumber,
-            simulated: simulated
+            label: label
         )
     }
 }
@@ -197,7 +197,7 @@ extension ReaderSoftwareUpdate {
             components: components.toApi(),
             keyProfileName: nil,
             onlyInstallRequiredUpdates: false,
-            requiredAt: requiredAt,
+            requiredAtInMilliseconds: requiredAt.toMillisecondsSinceEpoch(),
             settingsVersion: nil,
             timeEstimate: durationEstimate.toApi(),
             version: deviceSoftwareVersion
@@ -240,19 +240,20 @@ extension DiscoveryConfigurationApi {
         switch self {
         case let config as BluetoothDiscoveryConfigurationApi:
             return try BluetoothScanDiscoveryConfigurationBuilder()
-                .setTimeout(UInt(config.timeout ?? 0))
+                .setTimeout(config.timeoutInSeconds?.toUInt() ?? 0)
                 .setSimulated(config.isSimulated)
                 .build()
         case let config as BluetoothProximityDiscoveryConfigurationApi:
             return try BluetoothProximityDiscoveryConfigurationBuilder()
                 .setSimulated(config.isSimulated)
                 .build()
-        case _ as HandoffDiscoveryConfigurationApi:
-            return nil
+        //case _ as HandoffDiscoveryConfigurationApi:
+        //    return nil
         case let config as InternetDiscoveryConfigurationApi:
             return try InternetDiscoveryConfigurationBuilder()
                 .setSimulated(config.isSimulated)
                 .setLocationId(config.locationId)
+                .setTimeout(config.timeoutInSeconds?.toUInt() ?? 0)
                 .build()
         case let config as TapToPayDiscoveryConfigurationApi:
             return try TapToPayDiscoveryConfigurationBuilder()
@@ -271,8 +272,8 @@ extension DiscoveryConfigurationApi {
             return .bluetoothScan
         case _ as BluetoothProximityDiscoveryConfigurationApi:
             return .bluetoothProximity
-        case _ as HandoffDiscoveryConfigurationApi:
-            return nil
+        //case _ as HandoffDiscoveryConfigurationApi:
+        //    return nil
         case _ as InternetDiscoveryConfigurationApi:
             return .internet
         case _ as TapToPayDiscoveryConfigurationApi:
@@ -290,8 +291,8 @@ extension DiscoveryConfigurationApi {
             return config.isSimulated
         case let config as BluetoothProximityDiscoveryConfigurationApi:
             return config.isSimulated
-        case _ as HandoffDiscoveryConfigurationApi:
-            return false
+        //case _ as HandoffDiscoveryConfigurationApi:
+        //    return false
         case let config as InternetDiscoveryConfigurationApi:
             return config.isSimulated
         case let config as TapToPayDiscoveryConfigurationApi:
@@ -357,8 +358,8 @@ extension DeviceTypeApi {
 extension CartApi {
     func toHost() throws -> Cart {
         return try CartBuilder(currency: currency)
-            .setTax(tax)
-            .setTotal(total)
+            .setTax(tax.toInt())
+            .setTotal(total.toInt())
             .setLineItems(lineItems.map { try $0.toHost()} )
             .build()
     }
@@ -367,8 +368,8 @@ extension CartApi {
 extension CartLineItemApi {
     func toHost() throws -> CartLineItem {
         return try CartLineItemBuilder(displayName: description)
-            .setAmount(amount)
-            .setQuantity(quantity)
+            .setAmount(amount.toInt())
+            .setQuantity(quantity.toInt())
             .build()
     }
 }

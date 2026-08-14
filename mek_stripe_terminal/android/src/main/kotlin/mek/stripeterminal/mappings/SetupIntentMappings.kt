@@ -8,20 +8,20 @@ import com.stripe.stripeterminal.external.models.SetupIntentCardPresentDetails
 import com.stripe.stripeterminal.external.models.SetupIntentPaymentMethodDetails
 import com.stripe.stripeterminal.external.models.SetupIntentStatus
 import com.stripe.stripeterminal.external.models.SetupIntentUsage
-import mek.stripeterminal.api.AllowRedisplayApi
-import mek.stripeterminal.api.SetupAttemptApi
-import mek.stripeterminal.api.SetupAttemptCardPresentDetailsApi
-import mek.stripeterminal.api.SetupAttemptPaymentMethodDetailsApi
-import mek.stripeterminal.api.SetupAttemptStatusApi
-import mek.stripeterminal.api.SetupIntentApi
-import mek.stripeterminal.api.SetupIntentStatusApi
-import mek.stripeterminal.api.SetupIntentUsageApi
+import AllowRedisplayApi
+import SetupAttemptApi
+import SetupAttemptCardPresentDetailsApi
+import SetupAttemptPaymentMethodDetailsApi
+import SetupAttemptStatusApi
+import SetupIntentApi
+import SetupIntentStatusApi
+import SetupIntentUsageApi
 import mek.stripeterminal.toHashMap
 
 fun SetupIntent.toApi(): SetupIntentApi {
     return SetupIntentApi(
         id = id!!,
-        created = created,
+        createdInMilliseconds = created * 1000,
         customerId = customerId,
         metadata = metadata.toHashMap(),
         usage = usage!!.toApi(),
@@ -52,7 +52,7 @@ fun SetupAttempt.toApi(): SetupAttemptApi {
     return SetupAttemptApi(
         id = id,
         applicationId = applicationId,
-        created = created,
+        createdInMilliseconds = created * 1000,
         customerId = customerId,
         onBehalfOf = onBehalfOfId,
         paymentMethodId = paymentMethodId,
@@ -76,7 +76,7 @@ fun SetupAttemptStatus.toApi(): SetupAttemptStatusApi {
 fun SetupIntentPaymentMethodDetails.toApi(): SetupAttemptPaymentMethodDetailsApi {
     return SetupAttemptPaymentMethodDetailsApi(
         cardPresent = cardPresentDetails?.toApi(),
-        interacPresent = interacPresentDetails?.toApi()
+        interactPresent = interacPresentDetails?.toApi()
     )
 }
 

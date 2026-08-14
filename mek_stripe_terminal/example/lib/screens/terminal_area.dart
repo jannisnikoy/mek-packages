@@ -56,12 +56,11 @@ class _TerminalAreaState extends State<TerminalArea> with StateTools {
   }
 
   Future<void> _restoreStateAfterHotRestart() async {
-    final (connectionStatus, paymentStatys, connectedReader) =
-        await (
-          Terminal.instance.getConnectionStatus(),
-          Terminal.instance.getPaymentStatus(),
-          Terminal.instance.getConnectedReader(),
-        ).wait;
+    final (connectionStatus, paymentStatys, connectedReader) = await (
+      Terminal.instance.getConnectionStatus(),
+      Terminal.instance.getPaymentStatus(),
+      Terminal.instance.getConnectedReader(),
+    ).wait;
     _connectionStatusNotifier.value = connectionStatus;
     _paymentStatusNotifier.value = paymentStatys;
     _connectedReaderNotifier.value = connectedReader;

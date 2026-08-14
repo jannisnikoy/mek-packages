@@ -1,6 +1,6 @@
 name: mek_stripe_terminal
 description: A StripeTerminal plugin to discover readers, connect to them and process payments.
-version: 5.6.0
+version: 5.7.0
 repository: https://github.com/BreX900/mek-packages/tree/main/stripe_terminal
 homepage: https://github.com/BreX900/mek-packages/tree/main/stripe_terminal
 topics:
@@ -15,7 +15,7 @@ scripts:
   bootstrap: dart pub global activate index_generator 4.0.0
 
   # To generate library dart file
-  generate-library: index_generator
+  generate-library: dart pub global activate index_generator && dart pub global run index_generator
   # To generate code to communicate between flutter and various platforms
   generate-api: dart run tool/generate_api.dart
   # To generate *.g.dart files
@@ -23,7 +23,7 @@ scripts:
 
   format: dart format .
 
-  publish: dart pub publish
+  publish: dart format . && dart pub publish
 
   # To recreate a project
   recreate-project: flutter create . --platforms=android --project-name=stripe_terminal --template=plugin --org=mek
@@ -31,27 +31,12 @@ scripts:
 dependencies:
   flutter: { sdk: flutter }
 
-  meta: ^1.15.0
-  collection: ^1.18.0
-  recase: ^4.1.0
-
-  mek_data_class: ^2.1.0
-  one_for_all: ^1.1.1
+  meta: ^1.16.0
 
 dev_dependencies:
-  mek_lints: ^5.0.0
+  mek_lints: ^7.0.0
 
-  path: ^1.8.3
-  build_runner: ^2.7.0
-  mek_data_class_generator: ^4.1.0
-
-  one_for_all_generator: ^2.0.2
-
-  flutter_test: { sdk: flutter }
-
-dependency_overrides:
-  one_for_all: { path: ../one_for_all }
-  one_for_all_generator: { path: ../one_for_all_generator }
+  pigeon: ^27.3.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -115,4 +100,4 @@ index_generator:
   libraries:
     - directory_path: lib
       exclude:
-        - src/platform/**
+        - '**/*.g.dart'

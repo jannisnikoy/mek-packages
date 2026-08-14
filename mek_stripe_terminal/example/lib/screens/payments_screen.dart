@@ -27,6 +27,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> with StateTools
   Future<void> _createPaymentIntent() async {
     final paymentIntent = await Terminal.instance.createPaymentIntent(
       PaymentIntentParameters(
+        metadata: {},
         amount: 200,
         currency: K.currency,
         captureMethod: CaptureMethod.automatic,
@@ -98,8 +99,9 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> with StateTools
             ),
             const SizedBox(height: 8.0),
             FilledButton.tonal(
-              onPressed:
-                  !isMutating ? () => mutate(_createFromApiAndRetrievePaymentIntentFromSdk) : null,
+              onPressed: !isMutating
+                  ? () => mutate(_createFromApiAndRetrievePaymentIntentFromSdk)
+                  : null,
               child: const Text('Create PaymentIntent via Api and Retrieve it via Sdk'),
             ),
             const SizedBox(height: 8.0),
@@ -107,11 +109,11 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> with StateTools
               FilledButton(
                 onPressed:
                     !isMutating &&
-                            connectedReader != null &&
-                            paymentIntent != null &&
-                            paymentIntent.status == PaymentIntentStatus.requiresPaymentMethod
-                        ? () => mutate(() async => _processPaymentIntent(paymentIntent))
-                        : null,
+                        connectedReader != null &&
+                        paymentIntent != null &&
+                        paymentIntent.status == PaymentIntentStatus.requiresPaymentMethod
+                    ? () => mutate(() async => _processPaymentIntent(paymentIntent))
+                    : null,
                 child: const Text('Process PaymentIntent'),
               )
             else

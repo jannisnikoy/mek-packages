@@ -1,37 +1,9 @@
-import 'package:mek_stripe_terminal/src/models/connection_configuration.dart';
-import 'package:mek_stripe_terminal/src/models/discovery_configuration.dart';
+import 'package:mek_stripe_terminal/src/terminal_api.g.dart';
 
-/// Configuration for the EasyConnect flow, which discovers and connects to a reader in one step.
-sealed class EasyConnectConfiguration {
-  const EasyConnectConfiguration();
-}
+typedef EasyConnectConfiguration = EasyConnectConfigurationApi;
 
-class InternetEasyConnectConfiguration extends EasyConnectConfiguration {
-  final InternetDiscoveryConfiguration discoveryConfiguration;
-  final InternetConnectionConfiguration connectionConfiguration;
+typedef InternetEasyConnectConfiguration = InternetEasyConnectConfigurationApi;
 
-  const InternetEasyConnectConfiguration({
-    required this.discoveryConfiguration,
-    required this.connectionConfiguration,
-  });
-}
+typedef AppsOnDevicesEasyConnectionConfiguration = AppsOnDevicesEasyConnectionConfigurationApi;
 
-class AppsOnDevicesEasyConnectionConfiguration extends EasyConnectConfiguration {
-  final AppsOnDevicesDiscoveryConfiguration discoveryConfiguration;
-  final AppsOnDevicesConnectionConfiguration connectionConfiguration;
-
-  const AppsOnDevicesEasyConnectionConfiguration({
-    required this.discoveryConfiguration,
-    required this.connectionConfiguration,
-  });
-}
-
-class TapToPayEasyConnectConfiguration extends EasyConnectConfiguration {
-  final TapToPayDiscoveryConfiguration discoveryConfiguration;
-  final TapToPayConnectionConfiguration connectionConfiguration;
-
-  const TapToPayEasyConnectConfiguration({
-    required this.discoveryConfiguration,
-    required this.connectionConfiguration,
-  });
-}
+typedef TapToPayEasyConnectConfiguration = TapToPayEasyConnectConfigurationApi;

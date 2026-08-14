@@ -1,106 +1,66 @@
 import 'package:mek_stripe_terminal/src/reader_delegates.dart';
-import 'package:one_for_all/one_for_all.dart';
+import 'package:mek_stripe_terminal/src/terminal_api.g.dart';
 
 sealed class ConnectionConfiguration {
-  const ConnectionConfiguration();
-
-  ReaderDelegateAbstract? get readerDelegate => null;
+  ReaderDelegateAbstract get readerDelegate;
 }
 
-class BluetoothConnectionConfiguration extends ConnectionConfiguration {
-  final String locationId;
-  final bool autoReconnectOnUnexpectedDisconnect;
+class BluetoothConnectionConfiguration extends BluetoothConnectionConfigurationApi
+    implements ConnectionConfiguration {
   @override
-  @SerializableParam.ignore()
   final MobileReaderDelegate readerDelegate;
 
-  const BluetoothConnectionConfiguration({
-    required this.locationId,
-    this.autoReconnectOnUnexpectedDisconnect = true,
+  BluetoothConnectionConfiguration({
+    required super.locationId,
+    super.autoReconnectOnUnexpectedDisconnect = true,
     required this.readerDelegate,
   });
 }
 
-class AppsOnDevicesConnectionConfiguration extends ConnectionConfiguration {
+class AppsOnDevicesConnectionConfiguration extends AppsOnDevicesConnectionConfigurationApi
+    implements ConnectionConfiguration {
   @override
-  @SerializableParam.ignore()
-  final AppsOnDevicesReaderDelegate? readerDelegate;
+  final AppsOnDevicesReaderDelegate readerDelegate;
 
-  const AppsOnDevicesConnectionConfiguration({required this.readerDelegate});
+  AppsOnDevicesConnectionConfiguration({required this.readerDelegate});
 }
 
-@Deprecated('Use AppsOnDevicesConnectionConfiguration')
-class HandoffConnectionConfiguration extends AppsOnDevicesConnectionConfiguration {
-  @SerializableParam.ignore()
-  final HandoffReaderDelegate? _handoffReaderDelegate;
-
+class InternetConnectionConfiguration extends InternetConnectionConfigurationApi
+    implements ConnectionConfiguration {
   @override
-  HandoffReaderDelegate? get readerDelegate => _handoffReaderDelegate;
+  final InternetReaderDelegate readerDelegate;
 
-  @Deprecated('Use AppsOnDevicesConnectionConfiguration')
-  const HandoffConnectionConfiguration({required HandoffReaderDelegate? readerDelegate})
-    : _handoffReaderDelegate = readerDelegate,
-      super(readerDelegate: readerDelegate);
-}
-
-class InternetConnectionConfiguration extends ConnectionConfiguration {
-  final bool failIfInUse;
-
-  /// Only available on iOS
-  final bool allowCustomerCancel;
-
-  @override
-  @SerializableParam.ignore()
-  final InternetReaderDelegate? readerDelegate;
-
-  const InternetConnectionConfiguration({
-    this.failIfInUse = true,
-    this.allowCustomerCancel = false,
+  InternetConnectionConfiguration({
+    super.failIfInUse = true,
+    super.allowCustomerCancel = false,
     required this.readerDelegate,
   });
 }
 
-class TapToPayConnectionConfiguration extends ConnectionConfiguration {
-  final String locationId;
-  final bool autoReconnectOnUnexpectedDisconnect;
-
-  /// Only available on iOS
-  final String? onBehalfOf;
-
-  /// Only available on iOS
-  final String? merchantDisplayName;
-
-  /// Only available on iOS
-  final bool tosAcceptancePermitted;
-
-  /// Only available on iOS
-  final bool returnReadResultImmediatelyEnabled;
-
+class TapToPayConnectionConfiguration extends TapToPayConnectionConfigurationApi
+    implements ConnectionConfiguration {
   @override
-  @SerializableParam.ignore()
-  final TapToPayReaderDelegate? readerDelegate;
+  final TapToPayReaderDelegate readerDelegate;
 
-  const TapToPayConnectionConfiguration({
-    required this.locationId,
-    this.autoReconnectOnUnexpectedDisconnect = true,
-    this.onBehalfOf,
-    this.merchantDisplayName,
-    this.tosAcceptancePermitted = true,
-    this.returnReadResultImmediatelyEnabled = true,
+  TapToPayConnectionConfiguration({
+    required super.locationId,
+    super.autoReconnectOnUnexpectedDisconnect = true,
+    super.onBehalfOf,
+    super.merchantDisplayName,
+    super.tosAcceptancePermitted = true,
+    super.returnReadResultImmediatelyEnabled = true,
     required this.readerDelegate,
   });
 }
 
-class UsbConnectionConfiguration extends ConnectionConfiguration {
-  final String locationId;
-  final bool autoReconnectOnUnexpectedDisconnect;
+class UsbConnectionConfiguration extends UsbConnectionConfigurationApi
+    implements ConnectionConfiguration {
   @override
-  @SerializableParam.ignore()
-  final MobileReaderDelegate? readerDelegate;
+  final MobileReaderDelegate readerDelegate;
 
-  const UsbConnectionConfiguration({
-    required this.locationId,
-    this.autoReconnectOnUnexpectedDisconnect = true,
+  UsbConnectionConfiguration({
+    required super.locationId,
+    super.autoReconnectOnUnexpectedDisconnect = true,
     required this.readerDelegate,
   });
 }

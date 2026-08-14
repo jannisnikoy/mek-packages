@@ -1,9 +1,13 @@
 
+## 5.7.0
+
+- build: bumped flutter to `^3.44.0` and dart to `3.12.0`
 - build(android): update minimum supported Android version to 26
 - build(android): added support for built-in kotlin and migrate .gradle to .gradle.kts
-- build: bumped flutter to `^3.44.0` and dart to `3.12.0`
+- build(ios): update minimum supported iOS version to 15.0
+- build(ios): removed support to cocoapods and added support to SPM
 
-## 5.6.0
+## 5.6.0 - DISCONTINUED
 
 - chore!: renamed `Terminal.initTerminal` to `Terminal.init`
 - feat: bump Android and iOS Stripe Terminal SDKs to `5.6.0`

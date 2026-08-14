@@ -1,14 +1,11 @@
 import 'dart:async';
 
-class CancelableFuture<T> implements Future<T> {
-  final Future<T> Function(int id) _onStart;
-  final Future<void> Function(int id) _onStop;
+import 'package:flutter/foundation.dart';
 
-  CancelableFuture(this._onStop, this._onStart);
+abstract class CancelableFuture<T> implements Future<T> {
+  late final Future<T> result = onStart(hashCode);
 
-  late final Future<T> result = _onStart(hashCode);
-
-  Future<void> cancel() => _onStop(hashCode);
+  Future<void> cancel() => onStop(hashCode);
 
   @override
   Stream<T> asStream() => result.asStream();
@@ -27,4 +24,10 @@ class CancelableFuture<T> implements Future<T> {
 
   @override
   Future<T> whenComplete(FutureOr<void> Function() action) => result.whenComplete(action);
+
+  @protected
+  Future<T> onStart(int id);
+
+  @protected
+  Future<void> onStop(int id);
 }

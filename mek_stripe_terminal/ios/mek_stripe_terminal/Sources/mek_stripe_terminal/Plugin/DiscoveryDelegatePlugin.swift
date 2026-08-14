@@ -2,11 +2,13 @@ import Foundation
 import StripeTerminal
 import Flutter
 
-class DiscoveryDelegatePlugin: NSObject, DiscoveryDelegate {
-    private var _sink: ControllerSink<[ReaderApi]>?
+class DiscoveryDelegatePlugin: DiscoverReadersStreamHandler {
+    private var _sink: PigeonEventSink<[ReaderApi]>? = nil
+    private var _delegate: DiscoveryDelegateHandler? = nil
     private var _cancelable: Cancelable? = nil
     private var _readers: [Reader] = []
-    
+    var configuration: DiscoveryConfiguration? = nil
+
     var readers: [Reader] { get {
         return _readers
     } }
@@ -16,37 +18,43 @@ class DiscoveryDelegatePlugin: NSObject, DiscoveryDelegate {
         self._readers = []
     }
     
-    func terminal(_ terminal: Terminal, didUpdateDiscoveredReaders readers: [Reader]) {
+    @objc func terminal(_ terminal: Terminal, didUpdateDiscoveredReaders readers: [Reader]) {
         DispatchQueue.main.async {
             self._readers = readers
             self._sink?.success(readers.map { $0.toApi() })
         }
     }
-
-    func onListen(
-        _ sink: ControllerSink<[ReaderApi]>,
-        _ configuration: DiscoveryConfigurationApi
-    ) -> PlatformError? {
+    
+    override func onListen(withArguments arguments: Any?, sink: PigeonEventSink<[ReaderApi]>) {
         self._cancel()
         
-        let configurationHost = try! configuration.toHost()
-        guard let configurationHost else {
-            return createApiException(
-                TerminalExceptionCodeApi.unknown,
-                "DiscoveryConfiguration not supported"
-            ).toPlatformError()
+        guard let configuration else {
+            sink.addError(
+                createApiException(
+                    TerminalExceptionCodeApi.unknown,
+                    "DiscoveryConfiguration not supported"
+                ).toPlatformError()
+            )
+            self._sink?.endOfStream()
+            self._sink = nil
+            return;
         }
+        
+        _delegate = DiscoveryDelegateHandler(delegate: self)
          
         self._cancelable = Terminal.shared.discoverReaders(
-            configurationHost,
-            delegate: self
+            configuration,
+            delegate: _delegate!
         ) { error in
             self._cancelable = nil
             DispatchQueue.main.async {
                 if let error = error as? NSError {
                     let exception = error.toApi()
-                    if (exception.code == TerminalExceptionCodeApi.canceled) {return}
-                    self._sink?.error(exception.toPlatformError())
+                    if (exception.code == TerminalExceptionCodeApi.canceled) {
+                        self._cancel()
+                        return;
+                    }
+                    self._sink?.addError(exception.toPlatformError())
                 }
                 
                 self._sink?.endOfStream()
@@ -54,18 +62,30 @@ class DiscoveryDelegatePlugin: NSObject, DiscoveryDelegate {
             }
         }
         self._sink = sink
-        return nil
     }
     
-    func onCancel(_ configuration: DiscoveryConfigurationApi) -> PlatformError? {
+    override func onCancel(withArguments arguments: Any?) {
         self._cancel()
-        return nil
     }
     
     private func _cancel() {
+        self._sink?.endOfStream()
         self._sink = nil
+        self._delegate = nil
         // Ignore error, the previous stream can no longer receive events
         self._cancelable?.cancel { error in }
         self._cancelable = nil
+    }
+}
+
+private class DiscoveryDelegateHandler : NSObject, DiscoveryDelegate {
+    let _delegate: DiscoveryDelegatePlugin
+
+    init(delegate: DiscoveryDelegatePlugin) {
+        self._delegate = delegate
+    }
+    
+    func terminal(_ terminal: Terminal, didUpdateDiscoveredReaders readers: [Reader]) {
+        _delegate.terminal(terminal, didUpdateDiscoveredReaders: readers)
     }
 }

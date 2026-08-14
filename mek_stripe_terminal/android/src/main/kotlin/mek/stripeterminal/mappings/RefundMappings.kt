@@ -1,8 +1,8 @@
 package mek.stripeterminal.mappings
 
 import com.stripe.stripeterminal.external.models.Refund
-import mek.stripeterminal.api.RefundApi
-import mek.stripeterminal.api.RefundStatusApi
+import RefundApi
+import RefundStatusApi
 import mek.stripeterminal.toHashMap
 
 fun Refund.toApi(): RefundApi {
@@ -10,7 +10,7 @@ fun Refund.toApi(): RefundApi {
         id = id,
         amount = amount!!,
         chargeId = chargeId!!,
-        created = created!!,
+        createdInMilliseconds = created!! * 1000,
         currency = currency!!,
         metadata = metadata?.toHashMap() ?: HashMap(),
         reason = reason,

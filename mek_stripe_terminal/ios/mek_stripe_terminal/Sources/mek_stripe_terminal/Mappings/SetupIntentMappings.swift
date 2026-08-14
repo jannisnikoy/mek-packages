@@ -4,13 +4,13 @@ import StripeTerminal
 extension SetupIntent {
     func toApi() -> SetupIntentApi {
         return SetupIntentApi(
-            created: created,
-            customerId: customer,
             id: stripeId!,
-            latestAttempt: latestAttempt?.toApi(),
+            createdInMilliseconds: created.toMillisecondsSinceEpoch(),
+            customerId: customer,
             metadata: metadata ?? [:],
+            usage: usage.toApi(),
             status: status.toApi(),
-            usage: usage.toApi()
+            latestAttempt: latestAttempt?.toApi()
         )
     }
 }
@@ -69,13 +69,12 @@ extension SetupAttempt {
             fatalError()
         }
         return SetupAttemptApi(
-            applicationId: application,
-            created: created,
+            id : stripeId, applicationId: application,
+            createdInMilliseconds: created.toMillisecondsSinceEpoch(),
             customerId: customer,
-            id : stripeId,
             onBehalfOf: onBehalfOf,
-            paymentMethodDetails: paymentMethodDetails?.toApi(),
             paymentMethodId: paymentMethod,
+            paymentMethodDetails: paymentMethodDetails?.toApi(),
             setupIntentId: setupIntent,
             status: statusApi
         )
@@ -86,7 +85,7 @@ extension SetupAttemptPaymentMethodDetails {
     func toApi() -> SetupAttemptPaymentMethodDetailsApi {
         return SetupAttemptPaymentMethodDetailsApi(
             cardPresent: cardPresent?.toApi(),
-            interacPresent: interacPresent?.toApi()
+            interactPresent: interacPresent?.toApi()
         )
     }
 }

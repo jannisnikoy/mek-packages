@@ -8,11 +8,12 @@ import com.stripe.stripeterminal.external.models.EasyConnectConfiguration.TapToP
 import com.stripe.stripeterminal.external.models.ConnectionConfiguration.AppsOnDevicesConnectionConfiguration
 import com.stripe.stripeterminal.external.models.ConnectionConfiguration.InternetConnectionConfiguration
 import com.stripe.stripeterminal.external.models.ConnectionConfiguration.TapToPayConnectionConfiguration
-import mek.stripeterminal.api.AppsOnDevicesEasyConnectionConfigurationApi
-import mek.stripeterminal.api.ConnectionConfigurationApi
-import mek.stripeterminal.api.EasyConnectConfigurationApi
-import mek.stripeterminal.api.InternetEasyConnectConfigurationApi
-import mek.stripeterminal.api.TapToPayEasyConnectConfigurationApi
+import AppsOnDevicesEasyConnectionConfigurationApi
+import ConnectionConfigurationApi
+import DiscoveryConfigurationApi
+import EasyConnectConfigurationApi
+import InternetEasyConnectConfigurationApi
+import TapToPayEasyConnectConfigurationApi
 import mek.stripeterminal.plugin.ReaderDelegatePlugin
 
 fun EasyConnectConfigurationApi.toHost(readerDelegate: ReaderDelegatePlugin): EasyConnectConfiguration {
@@ -33,7 +34,7 @@ fun EasyConnectConfigurationApi.toHost(readerDelegate: ReaderDelegatePlugin): Ea
 }
 
 private fun requireInternetDiscovery(
-    discoveryConfiguration: mek.stripeterminal.api.DiscoveryConfigurationApi,
+    discoveryConfiguration: DiscoveryConfigurationApi,
 ): DiscoveryConfiguration.InternetDiscoveryConfiguration {
     val host = discoveryConfiguration.toHost()
         ?: throw IllegalArgumentException("Discovery method not supported")
@@ -42,7 +43,7 @@ private fun requireInternetDiscovery(
 }
 
 private fun requireTapToPayDiscovery(
-    discoveryConfiguration: mek.stripeterminal.api.DiscoveryConfigurationApi,
+    discoveryConfiguration: DiscoveryConfigurationApi,
 ): DiscoveryConfiguration.TapToPayDiscoveryConfiguration {
     val host = discoveryConfiguration.toHost()
         ?: throw IllegalArgumentException("Discovery method not supported")

@@ -2,9 +2,9 @@ package mek.stripeterminal.mappings
 
 import com.stripe.stripeterminal.external.models.Charge
 import com.stripe.stripeterminal.external.models.PaymentMethodDetails
-import mek.stripeterminal.api.ChargeApi
-import mek.stripeterminal.api.ChargeStatusApi
-import mek.stripeterminal.api.PaymentMethodDetailsApi
+import ChargeApi
+import ChargeStatusApi
+import PaymentMethodDetailsApi
 import mek.stripeterminal.toHashMap
 
 fun Charge.toApi(): ChargeApi {
@@ -18,7 +18,7 @@ fun Charge.toApi(): ChargeApi {
             else -> throw Error("Unsupported $status")
         },
         paymentMethodDetails = paymentMethodDetails?.toApi(),
-        description = description,
+        descriptionX = description,
         id = id,
         metadata = metadata?.toHashMap() ?: hashMapOf(),
         statementDescriptorSuffix = statementDescriptorSuffix,
@@ -30,6 +30,6 @@ fun Charge.toApi(): ChargeApi {
 fun PaymentMethodDetails.toApi(): PaymentMethodDetailsApi {
     return PaymentMethodDetailsApi(
         cardPresent = cardPresentDetails?.toApi(),
-        interacPresent = interacPresentDetails?.toApi()
+        interactPresent = interacPresentDetails?.toApi()
     )
 }

@@ -4,16 +4,16 @@ import StripeTerminal
 extension Refund {
     func toApi() -> RefundApi {
         return RefundApi(
-            amount: Int(amount),
-            chargeId: chargeId ?? "",
-            created: created,
-            currency: currency,
-            failureReason: failureReason,
             id: stripeId,
+            amount: amount.toInt64(),
+            chargeId: chargeId ?? "",
+            createdInMilliseconds: created.toMillisecondsSinceEpoch(),
+            currency: currency,
             metadata: metadata,
-            paymentMethodDetails: paymentMethodDetails?.toApi(),
             reason: reason,
-            status: status.toApi()
+            status: status.toApi(),
+            paymentMethodDetails: paymentMethodDetails?.toApi(),
+            failureReason: failureReason
         )
     }
 }
@@ -39,7 +39,7 @@ extension PaymentMethodDetails {
     func toApi() -> PaymentMethodDetailsApi {
         return PaymentMethodDetailsApi(
             cardPresent: cardPresent?.toApi(),
-            interacPresent: interacPresent?.toApi()
+            interactPresent: interacPresent?.toApi()
         )
     }
 }

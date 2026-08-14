@@ -2,15 +2,19 @@ import Foundation
 import StripeTerminal
 
 extension TerminalExceptionApi {
-    func toPlatformError() -> PlatformError {
-        return PlatformError("mek_stripe_terminal", nil, serialize())
+    func toPlatformError() -> PigeonError {
+        return PigeonError(code: "mek_stripe_terminal", message: nil, details: toList())
     }
 }
 
 extension NSError {
-    func toPlatformError(apiError: Error? = nil, paymentIntent: PaymentIntent? = nil) -> PlatformError {
+    func toPlatformError(apiError: Error? = nil, paymentIntent: PaymentIntent? = nil) -> PigeonError {
         if (self.domain != "com.stripe-terminal") {
-            return PlatformError("\(self.domain):\(self.code)", self.localizedDescription, "\(self)")
+            return PigeonError(
+                code: "\(self.domain):\(self.code)",
+                message: self.localizedDescription,
+                details: "\(self)"
+            )
         }
         let apiException = toApi(apiError: apiError, paymentIntent: paymentIntent)
         return apiException.toPlatformError()
@@ -19,11 +23,11 @@ extension NSError {
     func toApi(apiError: Error? = nil, paymentIntent: PaymentIntent? = nil) -> TerminalExceptionApi {
         let code = self.toApiCode();
         return TerminalExceptionApi(
-            apiError: apiError?.localizedDescription,
             code: code ?? TerminalExceptionCodeApi.unknown,
             message: localizedDescription,
+            stackTrace: nil,
             paymentIntent: paymentIntent?.toApi(),
-            stackTrace: nil
+            apiError: apiError?.localizedDescription
         )
     }
     

@@ -4,10 +4,10 @@ import com.stripe.stripeterminal.external.models.SimulateReaderUpdate
 import com.stripe.stripeterminal.external.models.SimulatedCard
 import com.stripe.stripeterminal.external.models.SimulatedCardType
 import com.stripe.stripeterminal.external.models.SimulatorConfiguration
-import mek.stripeterminal.api.SimulateReaderUpdateApi
-import mek.stripeterminal.api.SimulatedCardApi
-import mek.stripeterminal.api.SimulatedCardTypeApi
-import mek.stripeterminal.api.SimulatorConfigurationApi
+import SimulateReaderUpdateApi
+import SimulatedCardApi
+import SimulatedCardTypeApi
+import SimulatorConfigurationApi
 
 fun SimulatorConfigurationApi.toHost(): SimulatorConfiguration {
     return SimulatorConfiguration(
@@ -44,7 +44,7 @@ fun SimulatedCardTypeApi.toHost(): SimulatedCardType {
         SimulatedCardTypeApi.DISCOVER -> SimulatedCardType.DISCOVER
         SimulatedCardTypeApi.DISCOVER2 -> SimulatedCardType.DISCOVER_2
         SimulatedCardTypeApi.DINERS -> SimulatedCardType.DINERS
-        SimulatedCardTypeApi.DINERS14_DIGIT -> SimulatedCardType.DINERS_14_DIGITS
+        SimulatedCardTypeApi.DINERS14DIGIT -> SimulatedCardType.DINERS_14_DIGITS
         SimulatedCardTypeApi.JBC -> SimulatedCardType.JCB
         SimulatedCardTypeApi.UNION_PAY -> SimulatedCardType.UNION_PAY
         SimulatedCardTypeApi.INTERAC -> SimulatedCardType.INTERAC

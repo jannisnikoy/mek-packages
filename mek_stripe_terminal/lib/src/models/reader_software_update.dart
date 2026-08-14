@@ -1,41 +1,16 @@
-import 'package:mek_data_class/mek_data_class.dart';
+import 'package:mek_stripe_terminal/src/terminal_api.g.dart';
 
-part 'reader_software_update.g.dart';
+typedef ReaderSoftwareUpdate = ReaderSoftwareUpdateApi;
 
-@DataClass()
-class ReaderSoftwareUpdate with _$ReaderSoftwareUpdate {
-  final List<UpdateComponent> components;
-  // final config: com.stripe.proto.model.config.MobileClientConfig? /* compiled code */
-  // final configSpec: com.stripe.proto.model.common.ClientVersionSpecPb? /* compiled code */
-  // final firmwareSpec: com.stripe.proto.model.common.ClientVersionSpecPb? /* compiled code */
-  final String? keyProfileName;
-  final bool onlyInstallRequiredUpdates;
-  final DateTime requiredAt;
-  final String? settingsVersion;
-  final UpdateTimeEstimate timeEstimate;
-  final String version;
+typedef UpdateComponent = UpdateComponentApi;
 
-  const ReaderSoftwareUpdate({
-    required this.components,
-    required this.keyProfileName,
-    required this.onlyInstallRequiredUpdates,
-    required this.requiredAt,
-    required this.settingsVersion,
-    required this.timeEstimate,
-    required this.version,
-  });
+typedef UpdateTimeEstimate = UpdateTimeEstimateApi;
 
-  bool get hasIncrementalUpdate => components.contains(UpdateComponent.incremental);
-  bool get hasFirmwareUpdate => components.contains(UpdateComponent.firmware);
-  bool get hasConfigUpdate => components.contains(UpdateComponent.config);
-  bool get hasKeyUpdate => components.contains(UpdateComponent.keys);
-}
-
-enum UpdateComponent { incremental, firmware, config, keys }
-
-enum UpdateTimeEstimate {
-  lessThanOneMinute,
-  oneToTwoMinutes,
-  twoToFiveMinutes,
-  fiveToFifteenMinutes,
+extension ReaderSoftwareUpdateApiUtils on ReaderSoftwareUpdateApi {
+  bool get hasIncrementalUpdate => components.contains(UpdateComponentApi.incremental);
+  bool get hasFirmwareUpdate => components.contains(UpdateComponentApi.firmware);
+  bool get hasConfigUpdate => components.contains(UpdateComponentApi.config);
+  bool get hasKeyUpdate => components.contains(UpdateComponentApi.keys);
+  DateTime get requiredAt =>
+      DateTime.fromMillisecondsSinceEpoch(requiredAtInMilliseconds, isUtc: true);
 }

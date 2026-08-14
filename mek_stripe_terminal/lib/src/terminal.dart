@@ -1,15 +1,13 @@
-library stripe_terminal;
-
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:mek_stripe_terminal/src/cancellable_future.dart';
 import 'package:mek_stripe_terminal/src/models/cart.dart';
-import 'package:mek_stripe_terminal/src/models/clear_cached_credentials_result.dart';
+import 'package:mek_stripe_terminal/src/models/clear_cached_credentials.dart';
 import 'package:mek_stripe_terminal/src/models/connection_configuration.dart';
 import 'package:mek_stripe_terminal/src/models/discovery_configuration.dart';
 import 'package:mek_stripe_terminal/src/models/easy_connect_configuration.dart';
 import 'package:mek_stripe_terminal/src/models/location.dart';
-import 'package:mek_stripe_terminal/src/models/payment.dart';
 import 'package:mek_stripe_terminal/src/models/payment_intent.dart';
 import 'package:mek_stripe_terminal/src/models/reader.dart';
 import 'package:mek_stripe_terminal/src/models/refund.dart';
@@ -17,7 +15,12 @@ import 'package:mek_stripe_terminal/src/models/setup_intent.dart';
 import 'package:mek_stripe_terminal/src/models/simultator_configuration.dart';
 import 'package:mek_stripe_terminal/src/models/tap_to_pay_ux_configuration.dart';
 import 'package:mek_stripe_terminal/src/models/tip.dart';
-import 'package:mek_stripe_terminal/src/platform/terminal_platform.dart';
+import 'package:mek_stripe_terminal/src/terminal_api.g.dart' as api;
+import 'package:mek_stripe_terminal/src/terminal_api.g.dart';
+import 'package:mek_stripe_terminal/src/terminal_exception.dart';
+import 'package:mek_stripe_terminal/src/terminal_handlers.dart';
+
+typedef PaymentStatus = PaymentStatusApi;
 
 /// Parts documented with "???" are not yet validated
 class Terminal {
@@ -30,7 +33,7 @@ class Terminal {
     return _instance!;
   }
 
-  static final TerminalPlatform _platform = TerminalPlatform();
+  static final TerminalPlatformApi _platform = TerminalPlatformApi();
   static final TerminalHandlers _handlers = TerminalHandlers(_platform);
 
   Terminal._();
@@ -57,10 +60,11 @@ class Terminal {
 
     _handlers.fetchToken = fetchToken;
     try {
-      await _platform.init(shouldPrintLogs: shouldPrintLogs);
+      await _platform.initialize(shouldPrintLogs: shouldPrintLogs);
       _instance = Terminal._();
-    } catch (_) {
+    } catch (exception) {
       _handlers.fetchToken = null;
+      if (exception is PlatformException) _throwIfIsHostException(exception);
       rethrow;
     }
   }
@@ -85,14 +89,14 @@ class Terminal {
   ///   create a reader session.
   /// - Subsequent calls to [connectReader] require a new connection token. If you disconnect from a
   ///   reader, and then call [connectReader] again, the SDK will fetch another connection token.
-  Future<ClearCachedCredentialsResult> clearCachedCredentials() async {
+  Future<ClearCachedCredentialsResult> clearCachedCredentials() => _run(() async {
     final result = await _platform.clearCachedCredentials();
     if (result.isSuccessful) {
       _handlers.handleReaderDisconnection();
       _controller = null;
     }
     return result;
-  }
+  });
 
   //region Reader discovery, connection and updates
   /// The currently connected reader’s connectionStatus changed.
@@ -104,7 +108,9 @@ class Terminal {
   Stream<ConnectionStatus> get onConnectionStatusChange => _handlers.connectionStatusChangeStream;
 
   /// Get the current [ConnectionStatus]
-  Future<ConnectionStatus> getConnectionStatus() async => await _platform.getConnectionStatus();
+  Future<ConnectionStatus> getConnectionStatus() => _run(() async {
+    return await _platform.getConnectionStatus();
+  });
 
   /// Use this method to determine whether the mobile device supports a given reader type using a
   /// particular discovery method.
@@ -119,12 +125,12 @@ class Terminal {
   Future<bool> supportsReadersOfType({
     DeviceType? deviceType,
     required DiscoveryConfiguration discoveryConfiguration,
-  }) async {
+  }) => _run(() async {
     return await _platform.supportsReadersOfType(
       deviceType: deviceType,
       discoveryConfiguration: discoveryConfiguration,
     );
-  }
+  });
 
   // ignore: close_sinks
   StreamController<List<Reader>>? _controller;
@@ -149,15 +155,18 @@ class Terminal {
   ///
   /// See https://stripe.com/docs/terminal/readers/connecting.
   Stream<List<Reader>> discoverReaders(DiscoveryConfiguration discoveryConfiguration) {
-    _controller = _handleStream(_controller, () {
-      return _platform.discoverReaders(discoveryConfiguration);
-    });
+    _controller = _handleStream(
+      _controller,
+      () =>
+          _run(() async => await _platform.applyDiscoverReadersParameters(discoveryConfiguration)),
+      () => api.discoverReaders().map((data) => data.cast<Reader>()),
+    );
     return _controller!.stream;
   }
 
   /// Discovers and connects to a reader in a single call.
   CancelableFuture<Reader> easyConnect(EasyConnectConfiguration configuration) {
-    return CancelableFuture(_platform.stopEasyConnect, (id) async {
+    return _CancelableFuture(_platform.stopEasyConnect, (id) async {
       return await _platform.startEasyConnect(operationId: id, configuration: configuration);
     });
   }
@@ -174,33 +183,33 @@ class Terminal {
   /// create a reader session.
   ///
   /// See https://stripe.com/docs/terminal/readers/connecting.
-  Future<Reader> connectReader(
-    Reader reader, {
-    required ConnectionConfiguration configuration,
-  }) async {
-    return _handlers.handleReaderConnection(configuration.readerDelegate, () async {
-      return await _platform.connectReader(reader.serialNumber, configuration);
-    });
-  }
+  Future<Reader> connectReader(Reader reader, {required ConnectionConfiguration configuration}) =>
+      _run(() async {
+        return await _handlers.handleReaderConnection(configuration.readerDelegate, () async {
+          return await _platform.connectReader(
+            reader.serialNumber,
+            configuration as ConnectionConfigurationApi,
+          );
+        });
+      });
 
   /// Information about the connected [Reader], or `null` if no reader is connected.
-  Future<Reader?> getConnectedReader() async => await _platform.getConnectedReader();
+  Future<Reader?> getConnectedReader() => _run(() async {
+    return await _platform.getConnectedReader();
+  });
 
   /// Retrieves a list of [Location] objects belonging to your merchant.
   ///
   /// You must specify the ID of one of these locations to register the reader to while connecting
   /// to a Bluetooth/Mobile/Usb readers.
-  Future<List<Location>> listLocations({
-    String? endingBefore,
-    int? limit,
-    String? startingAfter,
-  }) async {
-    return await _platform.listLocations(
-      endingBefore: endingBefore,
-      limit: limit,
-      startingAfter: startingAfter,
-    );
-  }
+  Future<List<Location>> listLocations({String? endingBefore, int? limit, String? startingAfter}) =>
+      _run(() async {
+        return await _platform.listLocations(
+          endingBefore: endingBefore,
+          limit: limit,
+          startingAfter: startingAfter,
+        );
+      });
 
   /// Installs the available update for the connected reader.
   ///
@@ -224,23 +233,28 @@ class Terminal {
   /// to include this functionality.
   ///
   /// Note: It is an error to call this method when the SDK is connected to the Verifone P400 or WisePOS E readers.
-  Future<void> installAvailableUpdate() async => await _platform.installAvailableUpdate();
+  Future<void> installAvailableUpdate() => _run(() async {
+    await _platform.installAvailableUpdate();
+  });
 
   /// Reboots the connected reader.
   ///
   /// Note: This method is only available for Bluetooth and USB readers.
-  Future<void> rebootReader() async => await _platform.rebootReader();
+  Future<void> rebootReader() => _run(() async {
+    await _platform.rebootReader();
+  });
 
   /// Attempts to disconnect from the currently connected reader.
-  Future<void> disconnectReader() async {
+  Future<void> disconnectReader() => _run(() async {
     await _platform.disconnectReader();
     _handlers.handleReaderDisconnection();
-  }
+  });
 
   /// The simulator configuration settings that will be used when connecting to and creating payments
   /// with a simulated reader.
-  Future<void> setSimulatorConfiguration(SimulatorConfiguration configuration) async =>
-      await _platform.setSimulatorConfiguration(configuration);
+  Future<void> setSimulatorConfiguration(SimulatorConfiguration configuration) => _run(() async {
+    await _platform.setSimulatorConfiguration(configuration);
+  });
   //endregion
 
   //region Taking payments
@@ -248,7 +262,9 @@ class Terminal {
   Stream<PaymentStatus> get onPaymentStatusChange => _handlers.paymentStatusChangeStream;
 
   /// The Terminal instance’s current payment status.
-  Future<PaymentStatus> getPaymentStatus() async => await _platform.getPaymentStatus();
+  Future<PaymentStatus> getPaymentStatus() => _run(() async {
+    return await _platform.getPaymentStatus();
+  });
 
   /// Creates a new [PaymentIntent] with the given parameters.
   ///
@@ -256,15 +272,17 @@ class Terminal {
   ///   you can create the [PaymentIntent] on your server and use the [retrievePaymentIntent] method
   ///   to retrieve the [PaymentIntent] in your app.
   ///   This cannot be used with the Verifone P400.
-  Future<PaymentIntent> createPaymentIntent(PaymentIntentParameters parameters) async =>
-      await _platform.createPaymentIntent(parameters);
+  Future<PaymentIntent> createPaymentIntent(PaymentIntentParameters parameters) => _run(() async {
+    return await _platform.createPaymentIntent(parameters);
+  });
 
   /// Retrieves a [PaymentIntent] with a client secret.
   ///
   /// If the information required to create a PaymentIntent isn’t readily available in your app,
   /// you can create the [PaymentIntent] on your server and use this method to retrieve the [PaymentIntent] in your app.
-  Future<PaymentIntent> retrievePaymentIntent(String clientSecret) async =>
-      await _platform.retrievePaymentIntent(clientSecret);
+  Future<PaymentIntent> retrievePaymentIntent(String clientSecret) => _run(() async {
+    return await _platform.retrievePaymentIntent(clientSecret);
+  });
 
   /// Processes a PaymentIntent by collecting a payment method and confirming it.
   ///
@@ -280,7 +298,7 @@ class Terminal {
     AllowRedisplay allowRedisplay = AllowRedisplay.unspecified,
     ConfirmPaymentIntentConfiguration? confirmConfiguration,
   }) {
-    return CancelableFuture(_platform.stopProcessPaymentIntent, (id) async {
+    return _CancelableFuture(_platform.stopProcessPaymentIntent, (id) async {
       return await _platform.startProcessPaymentIntent(
         operationId: id,
         paymentIntentId: paymentIntent.id,
@@ -302,8 +320,9 @@ class Terminal {
   /// with status [PaymentIntentStatus.canceled].
   ///
   /// Note: This cannot be used with the Verifone P400 reader.
-  Future<void> cancelPaymentIntent(PaymentIntent paymentIntent) async =>
-      await _platform.cancelPaymentIntent(paymentIntent.id);
+  Future<PaymentIntent> cancelPaymentIntent(PaymentIntent paymentIntent) => _run(() async {
+    return await _platform.cancelPaymentIntent(paymentIntent.id);
+  });
   //endregion
 
   //region Saving payment details for later use
@@ -323,7 +342,7 @@ class Terminal {
     String? onBehalfOf,
     String? description,
     SetupIntentUsage usage = SetupIntentUsage.offSession,
-  }) async {
+  }) => _run(() async {
     return await _platform.createSetupIntent(
       customerId: customerId,
       metadata: metadata,
@@ -331,14 +350,15 @@ class Terminal {
       description: description,
       usage: usage,
     );
-  }
+  });
 
   /// Retrieves an [SetupIntent] with a client secret.
   ///
   /// If you’ve created a SetupIntent on your backend, you must retrieve it in the Stripe Terminal
   /// SDK before calling [processSetupIntent].
-  Future<SetupIntent> retrieveSetupIntent(String clientSecret) async =>
-      await _platform.retrieveSetupIntent(clientSecret);
+  Future<SetupIntent> retrieveSetupIntent(String clientSecret) => _run(() async {
+    return await _platform.retrieveSetupIntent(clientSecret);
+  });
 
   /// Processes a SetupIntent by collecting a payment method and confirming it.
   CancelableFuture<SetupIntent> processSetupIntent(
@@ -346,7 +366,7 @@ class Terminal {
     required AllowRedisplay allowRedisplay,
     bool customerCancellationEnabled = true,
   }) {
-    return CancelableFuture(_platform.stopProcessSetupIntent, (id) async {
+    return _CancelableFuture(_platform.stopProcessSetupIntent, (id) async {
       return await _platform.startProcessSetupIntent(
         operationId: id,
         setupIntentId: setupIntent.id,
@@ -360,8 +380,9 @@ class Terminal {
   ///
   /// If the cancel request succeeds returns the updated [SetupIntent] object with status
   /// [SetupIntentStatus.cancelled].
-  Future<SetupIntent> cancelSetupIntent(SetupIntent setupIntent) async =>
-      await _platform.cancelSetupIntent(setupIntent.id);
+  Future<SetupIntent> cancelSetupIntent(SetupIntent setupIntent) => _run(() async {
+    return await _platform.cancelSetupIntent(setupIntent.id);
+  });
 
   //endregion
 
@@ -400,12 +421,14 @@ class Terminal {
     bool? refundApplicationFee,
     bool customerCancellationEnabled = true,
   }) {
-    _validateRefundParameters(
-      chargeId: chargeId,
-      paymentIntentId: paymentIntentId,
-      paymentIntentClientSecret: paymentIntentClientSecret,
-    );
-    return CancelableFuture(_platform.stopProcessRefund, (id) async {
+    if (chargeId != null || (paymentIntentId != null && paymentIntentClientSecret != null)) {
+      throw ArgumentError(
+        'Either chargeId or (paymentIntentId and paymentIntentClientSecret) params must be provided to refund.',
+      );
+    }
+    assert(!(chargeId != null && (paymentIntentId != null || paymentIntentClientSecret != null)));
+
+    return _CancelableFuture(_platform.stopProcessRefund, (id) async {
       return await _platform.startProcessRefund(
         operationId: id,
         chargeId: chargeId,
@@ -428,52 +451,92 @@ class Terminal {
   /// are also not automatically calculated and must be set in [Cart].
   ///
   /// Note: Only available for the Verifone P400 and BBPOS WisePOS E.
-  Future<void> setReaderDisplay(Cart cart) async => await _platform.setReaderDisplay(cart);
+  Future<void> setReaderDisplay(Cart cart) => _run(() async {
+    await _platform.setReaderDisplay(cart);
+  });
 
   /// Clears the reader display and resets it to the splash screen.
   ///
   /// Note: Only available for the Verifone P400 and BBPOS WisePOS E.
-  Future<void> clearReaderDisplay() async => await _platform.clearReaderDisplay();
+  Future<void> clearReaderDisplay() => _run(() async {
+    await _platform.clearReaderDisplay();
+  });
 
   /// Configure Tap to Pay UX
-  Future<void> setTapToPayUXConfiguration(TapToPayUxConfiguration configuration) async =>
-      await _platform.setTapToPayUXConfiguration(configuration);
+  Future<void> setTapToPayUXConfiguration(TapToPayUxConfiguration configuration) => _run(() async {
+    await _platform.setTapToPayUXConfiguration(configuration);
+  });
 
   /// Checks if the current Stripe account has a linked Tap to Pay on iPhone account (iOS only).
-  Future<bool> isTapToPayAccountLinked({String? onBehalfOf}) async =>
-      await _platform.isTapToPayAccountLinked(onBehalfOf: onBehalfOf);
+  Future<bool> isTapToPayAccountLinked({String? onBehalfOf}) => _run(() async {
+    return await _platform.isTapToPayAccountLinked(onBehalfOf: onBehalfOf);
+  });
   //endregion
 
   StreamController<T> _handleStream<T>(
     StreamController<T>? oldController,
+    Future<void> Function() onSetup,
     Stream<T> Function() onListen,
   ) {
     unawaited(oldController?.close());
+
     final newController = StreamController<T>(sync: true);
-    late StreamSubscription subscription;
-    newController.onListen = () {
-      subscription = onListen().listen(
-        newController.add,
-        onError: newController.addError,
-        onDone: newController.close,
-      );
+    newController.onListen = () async {
+      try {
+        await onSetup();
+
+        await newController.addStream(
+          onListen().handleError((error, stackTrace) {
+            if (error is PlatformException) _throwIfIsHostException(error);
+            Error.throwWithStackTrace(error, stackTrace);
+          }),
+        );
+      } catch (error, stackTrace) {
+        newController.addError(error, stackTrace);
+      }
     };
-    newController.onCancel = () async => await subscription.cancel();
     return newController;
   }
 
-  void _validateRefundParameters({
-    String? chargeId,
-    String? paymentIntentId,
-    String? paymentIntentClientSecret,
-  }) {
-    if (chargeId == null && paymentIntentId == null) {
-      throw ArgumentError('Either chargeId or paymentIntentId must be provided to refund.');
-    }
-    if (paymentIntentId != null && paymentIntentClientSecret == null) {
-      throw ArgumentError(
-        'paymentIntentClientSecret is required when paymentIntentId is provided.',
-      );
+  static Future<R> _run<R>(Future<R> Function() body) async {
+    try {
+      return await body();
+    } on PlatformException catch (exception) {
+      _throwIfIsHostException(exception);
+      rethrow;
     }
   }
+}
+
+class _CancelableFuture<T> extends CancelableFuture<T> {
+  final Future<T> Function(int id) _onStart;
+  final Future<void> Function(int id) _onStop;
+
+  _CancelableFuture(this._onStop, this._onStart);
+
+  @override
+  Future<T> onStart(int id) async {
+    try {
+      return await _onStart(id);
+    } on PlatformException catch (exception) {
+      _throwIfIsHostException(exception);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> onStop(int id) async {
+    try {
+      await _onStop(id);
+    } on PlatformException catch (exception) {
+      _throwIfIsHostException(exception);
+      rethrow;
+    }
+  }
+}
+
+void _throwIfIsHostException(PlatformException exception) {
+  if (exception.code != 'mek_stripe_terminal') return;
+  final data = TerminalExceptionApi.decode(exception.details);
+  throw TerminalException.fromApi(data);
 }

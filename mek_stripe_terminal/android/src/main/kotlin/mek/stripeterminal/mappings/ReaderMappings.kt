@@ -1,5 +1,6 @@
 package mek.stripeterminal.mappings
 
+import ConnectionStatusApi
 import com.stripe.stripeterminal.external.models.Address
 import com.stripe.stripeterminal.external.models.BatteryStatus
 import com.stripe.stripeterminal.external.models.Cart
@@ -15,34 +16,31 @@ import com.stripe.stripeterminal.external.models.ReaderDisplayMessage
 import com.stripe.stripeterminal.external.models.ReaderEvent
 import com.stripe.stripeterminal.external.models.ReaderInputOptions
 import com.stripe.stripeterminal.external.models.ReaderSoftwareUpdate
-import mek.stripeterminal.api.AddressApi
-import mek.stripeterminal.api.BatteryStatusApi
-import mek.stripeterminal.api.AppsOnDevicesDiscoveryConfigurationApi
-import mek.stripeterminal.api.BluetoothDiscoveryConfigurationApi
-import mek.stripeterminal.api.BluetoothProximityDiscoveryConfigurationApi
-import mek.stripeterminal.api.CartApi
-import mek.stripeterminal.api.CartLineItemApi
-import mek.stripeterminal.api.ConnectionStatusApi
-import mek.stripeterminal.api.DiscoveryFilterApi
-import mek.stripeterminal.api.DiscoveryFilterByReaderIdApi
-import mek.stripeterminal.api.DiscoveryFilterBySerialNumberApi
-import mek.stripeterminal.api.DeviceTypeApi
-import mek.stripeterminal.api.DiscoveryConfigurationApi
-import mek.stripeterminal.api.HandoffDiscoveryConfigurationApi
-import mek.stripeterminal.api.InternetDiscoveryConfigurationApi
-import mek.stripeterminal.api.LocationApi
-import mek.stripeterminal.api.LocationStatusApi
-import mek.stripeterminal.api.NetworkStatusApi
-import mek.stripeterminal.api.ReaderApi
-import mek.stripeterminal.api.ReaderDisplayMessageApi
-import mek.stripeterminal.api.ReaderEventApi
-import mek.stripeterminal.api.ReaderInputOptionApi
-import mek.stripeterminal.api.ReaderSoftwareUpdateApi
-import mek.stripeterminal.api.TapToPayDiscoveryConfigurationApi
-import mek.stripeterminal.api.UpdateComponentApi
-import mek.stripeterminal.api.UpdateTimeEstimateApi
-import mek.stripeterminal.api.UsbDiscoveryConfigurationApi
-import mek.stripeterminal.microsecondsToSeconds
+import AddressApi
+import BatteryStatusApi
+import AppsOnDevicesDiscoveryConfigurationApi
+import BluetoothDiscoveryConfigurationApi
+import BluetoothProximityDiscoveryConfigurationApi
+import CartApi
+import CartLineItemApi
+import DeviceTypeApi
+import DiscoveryConfigurationApi
+import DiscoveryFilterApi
+import DiscoveryFilterByReaderIdApi
+import DiscoveryFilterBySerialNumberApi
+import InternetDiscoveryConfigurationApi
+import LocationApi
+import LocationStatusApi
+import NetworkStatusApi
+import ReaderApi
+import ReaderDisplayMessageApi
+import ReaderEventApi
+import ReaderInputOptionApi
+import ReaderSoftwareUpdateApi
+import TapToPayDiscoveryConfigurationApi
+import UpdateComponentApi
+import UpdateTimeEstimateApi
+import UsbDiscoveryConfigurationApi
 import mek.stripeterminal.toHashMap
 
 fun Reader.toApi(): ReaderApi {
@@ -73,24 +71,24 @@ fun LocationStatus.toApi(): LocationStatusApi? {
 
 fun DeviceType.toApi(): DeviceTypeApi? {
     return when (this) {
-        DeviceType.CHIPPER_1X -> DeviceTypeApi.CHIPPER1_X
-        DeviceType.CHIPPER_2X -> DeviceTypeApi.CHIPPER2_X
+        DeviceType.CHIPPER_1X -> DeviceTypeApi.CHIPPER1X
+        DeviceType.CHIPPER_2X -> DeviceTypeApi.CHIPPER2X
         DeviceType.STRIPE_M2 -> DeviceTypeApi.STRIPE_M2
         DeviceType.TAP_TO_PAY_DEVICE -> DeviceTypeApi.TAP_TO_PAY
         DeviceType.WISECUBE -> DeviceTypeApi.WISE_CUBE
         DeviceType.WISEPAD_3 -> DeviceTypeApi.WISE_PAD3
         DeviceType.WISEPAD_3S -> DeviceTypeApi.WISE_PAD3S
         DeviceType.WISEPOS_E -> DeviceTypeApi.WISE_POS_E
-        DeviceType.WISEPOS_E_DEVKIT -> DeviceTypeApi.WISE_POS_E_DEVKIT
+        DeviceType.WISEPOS_E_DEVKIT -> DeviceTypeApi.WISE_POS_EDEVKIT
         DeviceType.ETNA -> DeviceTypeApi.ETNA
         DeviceType.STRIPE_S700 -> DeviceTypeApi.STRIPE_S700
-        DeviceType.STRIPE_S700_DEVKIT -> DeviceTypeApi.STRIPE_S700_DEVKIT
+        DeviceType.STRIPE_S700_DEVKIT -> DeviceTypeApi.STRIPE_S700DEVKIT
         DeviceType.STRIPE_S710 -> DeviceTypeApi.STRIPE_S710
-        DeviceType.STRIPE_S710_DEVKIT -> DeviceTypeApi.STRIPE_S710_DEVKIT
+        DeviceType.STRIPE_S710_DEVKIT -> DeviceTypeApi.STRIPE_S710DEVKIT
         DeviceType.STRIPE_T600 -> DeviceTypeApi.STRIPE_T600
-        DeviceType.STRIPE_T600_DEVKIT -> DeviceTypeApi.STRIPE_T600_DEVKIT
+        DeviceType.STRIPE_T600_DEVKIT -> DeviceTypeApi.STRIPE_T600DEVKIT
         DeviceType.STRIPE_T610 -> DeviceTypeApi.STRIPE_T610
-        DeviceType.STRIPE_T610_DEVKIT -> DeviceTypeApi.STRIPE_T610_DEVKIT
+        DeviceType.STRIPE_T610_DEVKIT -> DeviceTypeApi.STRIPE_T610DEVKIT
         DeviceType.VERIFONE_V660P -> DeviceTypeApi.VERIFONE_V660P
         DeviceType.VERIFONE_V660PA -> DeviceTypeApi.VERIFONE_V660PA
         DeviceType.VERIFONE_M425 -> DeviceTypeApi.VERIFONE_M425
@@ -98,7 +96,7 @@ fun DeviceType.toApi(): DeviceTypeApi? {
         DeviceType.VERIFONE_P630 -> DeviceTypeApi.VERIFONE_P630
         DeviceType.VERIFONE_UX700 -> DeviceTypeApi.VERIFONE_UX700
         DeviceType.VERIFONE_V660P_DEVKIT -> DeviceTypeApi.VERIFONE_V660P_DEVKIT
-        DeviceType.VERIFONE_UX700_DEVKIT -> DeviceTypeApi.VERIFONE_UX700_DEVKIT
+        DeviceType.VERIFONE_UX700_DEVKIT -> DeviceTypeApi.VERIFONE_UX700DEVKIT
         DeviceType.VERIFONE_VM100 -> DeviceTypeApi.VERIFONE_VM100
         DeviceType.VERIFONE_VP100 -> DeviceTypeApi.VERIFONE_VP100
         DeviceType.STRIPE_U200 -> DeviceTypeApi.STRIPE_U200
@@ -185,7 +183,7 @@ fun ReaderSoftwareUpdate.toApi(): ReaderSoftwareUpdateApi {
         components = components.map { it.toApi() },
         keyProfileName = keyProfileName,
         onlyInstallRequiredUpdates = onlyInstallRequiredUpdates,
-        requiredAt = requiredAtMs,
+        requiredAtInMilliseconds = requiredAtMs,
         settingsVersion = settingsVersion,
         timeEstimate = durationEstimate.toApi(),
         version = version
@@ -221,16 +219,16 @@ fun DiscoveryConfigurationApi.toHost(): DiscoveryConfiguration? {
         is BluetoothDiscoveryConfigurationApi ->
             DiscoveryConfiguration.BluetoothDiscoveryConfiguration(
                 isSimulated = isSimulated,
-                timeout = timeout?.let { microsecondsToSeconds(it) } ?: 0
+                timeout = timeoutInSeconds?.toInt() ?: 0
             )
         is BluetoothProximityDiscoveryConfigurationApi -> null
         is AppsOnDevicesDiscoveryConfigurationApi -> DiscoveryConfiguration.AppsOnDevicesDiscoveryConfiguration()
-        is HandoffDiscoveryConfigurationApi -> DiscoveryConfiguration.AppsOnDevicesDiscoveryConfiguration()
+//        is HandoffDiscoveryConfigurationApi -> DiscoveryConfiguration.AppsOnDevicesDiscoveryConfiguration()
         is InternetDiscoveryConfigurationApi ->
             DiscoveryConfiguration.InternetDiscoveryConfiguration(
                 isSimulated = isSimulated,
                 location = locationId,
-                timeout = timeout?.let { microsecondsToSeconds(it) } ?: 0,
+                timeout = timeoutInSeconds?.toInt() ?: 0,
                 discoveryFilter = discoveryFilter.toHost()
             )
         is TapToPayDiscoveryConfigurationApi ->
@@ -240,7 +238,7 @@ fun DiscoveryConfigurationApi.toHost(): DiscoveryConfiguration? {
         is UsbDiscoveryConfigurationApi ->
             DiscoveryConfiguration.UsbDiscoveryConfiguration(
                 isSimulated = isSimulated,
-                timeout = timeout?.let { microsecondsToSeconds(it) } ?: 0
+                timeout = timeoutInSeconds?.toInt() ?: 0
             )
     }
 }
@@ -256,24 +254,24 @@ fun DiscoveryFilterApi?.toHost(): DiscoveryFilter {
 
 fun DeviceTypeApi.toHost(): DeviceType? {
     return when (this) {
-        DeviceTypeApi.CHIPPER1_X -> DeviceType.CHIPPER_1X
-        DeviceTypeApi.CHIPPER2_X -> DeviceType.CHIPPER_2X
+        DeviceTypeApi.CHIPPER1X -> DeviceType.CHIPPER_1X
+        DeviceTypeApi.CHIPPER2X -> DeviceType.CHIPPER_2X
         DeviceTypeApi.STRIPE_M2 -> DeviceType.STRIPE_M2
         DeviceTypeApi.TAP_TO_PAY -> DeviceType.TAP_TO_PAY_DEVICE
         DeviceTypeApi.WISE_CUBE -> DeviceType.WISECUBE
         DeviceTypeApi.WISE_PAD3 -> DeviceType.WISEPAD_3
         DeviceTypeApi.WISE_POS_E -> DeviceType.WISEPOS_E
         DeviceTypeApi.WISE_PAD3S -> DeviceType.WISEPAD_3S
-        DeviceTypeApi.WISE_POS_E_DEVKIT -> DeviceType.WISEPOS_E_DEVKIT
+        DeviceTypeApi.WISE_POS_EDEVKIT -> DeviceType.WISEPOS_E_DEVKIT
         DeviceTypeApi.ETNA -> DeviceType.ETNA
         DeviceTypeApi.STRIPE_S700 -> DeviceType.STRIPE_S700
-        DeviceTypeApi.STRIPE_S700_DEVKIT -> DeviceType.STRIPE_S700_DEVKIT
+        DeviceTypeApi.STRIPE_S700DEVKIT -> DeviceType.STRIPE_S700_DEVKIT
         DeviceTypeApi.STRIPE_S710 -> DeviceType.STRIPE_S710
-        DeviceTypeApi.STRIPE_S710_DEVKIT -> DeviceType.STRIPE_S710_DEVKIT
+        DeviceTypeApi.STRIPE_S710DEVKIT -> DeviceType.STRIPE_S710_DEVKIT
         DeviceTypeApi.STRIPE_T600 -> DeviceType.STRIPE_T600
-        DeviceTypeApi.STRIPE_T600_DEVKIT -> DeviceType.STRIPE_T600_DEVKIT
+        DeviceTypeApi.STRIPE_T600DEVKIT -> DeviceType.STRIPE_T600_DEVKIT
         DeviceTypeApi.STRIPE_T610 -> DeviceType.STRIPE_T610
-        DeviceTypeApi.STRIPE_T610_DEVKIT -> DeviceType.STRIPE_T610_DEVKIT
+        DeviceTypeApi.STRIPE_T610DEVKIT -> DeviceType.STRIPE_T610_DEVKIT
         DeviceTypeApi.VERIFONE_V660P -> DeviceType.VERIFONE_V660P
         DeviceTypeApi.VERIFONE_V660PA -> DeviceType.VERIFONE_V660PA
         DeviceTypeApi.VERIFONE_M425 -> DeviceType.VERIFONE_M425
@@ -281,7 +279,7 @@ fun DeviceTypeApi.toHost(): DeviceType? {
         DeviceTypeApi.VERIFONE_P630 -> DeviceType.VERIFONE_P630
         DeviceTypeApi.VERIFONE_UX700 -> DeviceType.VERIFONE_UX700
         DeviceTypeApi.VERIFONE_V660P_DEVKIT -> DeviceType.VERIFONE_V660P_DEVKIT
-        DeviceTypeApi.VERIFONE_UX700_DEVKIT -> DeviceType.VERIFONE_UX700_DEVKIT
+        DeviceTypeApi.VERIFONE_UX700DEVKIT -> DeviceType.VERIFONE_UX700_DEVKIT
         DeviceTypeApi.VERIFONE_VM100 -> DeviceType.VERIFONE_VM100
         DeviceTypeApi.VERIFONE_VP100 -> DeviceType.VERIFONE_VP100
         DeviceTypeApi.STRIPE_U200 -> DeviceType.STRIPE_U200
@@ -304,7 +302,7 @@ fun CartApi.toHost(): Cart {
 
 fun CartLineItemApi.toHost(): CartLineItem {
     return CartLineItem.Builder(
-        description = description,
+        description = descriptionX,
         quantity = quantity.toInt(),
         amount = amount
     )

@@ -3,65 +3,68 @@ import StripeTerminal
 import UIKit
 
 public class TerminalPlugin: NSObject, FlutterPlugin, TerminalPlatformApi {
-    
+    private static var shared: TerminalPlugin?
     
     public static func register(with registrar: FlutterPluginRegistrar) {
-        let instance = TerminalPlugin(registrar.messenger())
-        setTerminalPlatformApiHandler(registrar.messenger(), instance)
-        instance.onAttachedToEngine()
-    }
+        TerminalPlugin.shared = TerminalPlugin(registrar.messenger());
+        TerminalPlatformApiSetup.setUp(binaryMessenger: registrar.messenger(), api: TerminalPlugin.shared!);
+ }
     
-    private let handlers: TerminalHandlersApi
+    private let _binaryMessenger: FlutterBinaryMessenger
+    private let _handlers: TerminalHandlersApi
+    private let _terminalDelegate: TerminalDelegatePlugin
+    private let _discoveryDelegate: DiscoveryDelegatePlugin
 
     init(_ binaryMessenger: FlutterBinaryMessenger) {
-        self.handlers = TerminalHandlersApi(binaryMessenger)
-        self._discoverReadersController = DiscoverReadersControllerApi(binaryMessenger: binaryMessenger)
-        self._readerDelegate = ReaderDelegatePlugin(handlers)
-    }
-
-    public func onAttachedToEngine() {
-        self.setupDiscoverReaders()
+        self._binaryMessenger = binaryMessenger
+        self._handlers = TerminalHandlersApi.init(binaryMessenger: binaryMessenger)
+        self._terminalDelegate = TerminalDelegatePlugin(_handlers)
+        self._discoveryDelegate = DiscoveryDelegatePlugin()
+        DiscoverReadersStreamHandler.register(with: binaryMessenger, streamHandler: _discoveryDelegate)
+        self._readerDelegate = ReaderDelegatePlugin(_handlers)
     }
     
     public func detachFromEngine(for registrar: FlutterPluginRegistrar) {
         if (Terminal.isInitialized()) { self._clean() }
         
-        self._discoverReadersController.removeHandler()
-        removeTerminalPlatformApiHandler()
+        if (TerminalPlugin.shared != self) { return; }
+        
+        TerminalPlatformApiSetup.setUp(binaryMessenger: _binaryMessenger, api: nil)
     }
     
-    func onInit(_ shouldPrintLogs: Bool) async throws {
+    func initialize(shouldPrintLogs: Bool) throws {
         // If a hot restart is performed in flutter the terminal is already initialized but we need to clean it up
         if Terminal.isInitialized() {
             _clean()
             return
         }
         
-        let delegate = TerminalDelegatePlugin(handlers)
-        Terminal.initWithTokenProvider(delegate, delegate: delegate)
+        Terminal.initWithTokenProvider(self._terminalDelegate, delegate: self._terminalDelegate)
         if (shouldPrintLogs) { Terminal.setLogListener { message in print(message) } }
     }
     
-    func onClearCachedCredentials() throws {
-        Terminal.shared.clearCachedCredentials()
+    func clearCachedCredentials() throws -> ClearCachedCredentialsResultApi {
+        try Terminal.shared.clearCachedCredentials().get()
         self._clean();
+        return ClearCachedCredentialsResultApi(
+            isSuccessful: true,
+            error: nil
+        )
     }
 
 // MARK: - Reader discovery, connection and updates
-    private let _discoverReadersController: DiscoverReadersControllerApi
-    private let _discoveryDelegate = DiscoveryDelegatePlugin()
     private var _readers: [Reader] { get {
         return _discoveryDelegate.readers
     } }
     private let _readerDelegate: ReaderDelegatePlugin
-
-    func onGetConnectionStatus() throws -> ConnectionStatusApi {
+    
+    func getConnectionStatus() throws -> ConnectionStatusApi {
         return Terminal.shared.connectionStatus.toApi()
     }
     
-    func onSupportsReadersOfType(
-        _ deviceType: DeviceTypeApi?,
-        _ discoveryConfiguration: DiscoveryConfigurationApi
+    func supportsReadersOfType(
+        deviceType: DeviceTypeApi?,
+        discoveryConfiguration: any DiscoveryConfigurationApi
     ) throws -> Bool {
         let hostDiscoveryMethod = discoveryConfiguration.toHostDiscoveryMethod()
         guard let hostDiscoveryMethod else {
@@ -84,156 +87,174 @@ public class TerminalPlugin: NSObject, FlutterPlugin, TerminalPlatformApi {
         }
     }
     
-    func setupDiscoverReaders() {
-        _discoverReadersController.setHandler(
-            _discoveryDelegate.onListen,
-            _discoveryDelegate.onCancel
-        )
+    func applyDiscoverReadersParameters(configuration: any DiscoveryConfigurationApi) throws {
+        self._discoveryDelegate.configuration = try! configuration.toHost()
     }
     
-    func onConnectReader(
-        _ serialNumber: String,
-        _ configuration: any ConnectionConfigurationApi
-    ) async throws -> ReaderApi {
-        let configuration = try configuration.toHost(_readerDelegate)
-        if let configuration = configuration {
-            do {
-                 let reader = try await Terminal.shared.connectReader(
-                     _findReader(serialNumber),
-                     connectionConfig: configuration
-                 )
-                 return reader.toApi()
-             } catch let error as NSError {
-                 throw error.toPlatformError()
-             }
+    func connectReader(
+        serialNumber: String,
+        configuration: any ConnectionConfigurationApi,
+        completion: @escaping (Result<ReaderApi, any Error>
+    ) -> Void) {
+        handleResult(completion) {
+            let configuration = try configuration.toHost(self._readerDelegate)
+            guard let configuration else {
+                throw PigeonError(code: "mek_stripe_terminal.unimplemented", message: "Unsupported connection configuration", details: nil)
+            }
+            let reader = try await Terminal.shared.connectReader(
+                self._findReader(serialNumber),
+                connectionConfig: configuration
+            )
+            return reader.toApi()
         }
-        throw PlatformError("", "Unsupported connection configuration")
     }
-
-    func onGetConnectedReader() throws -> ReaderApi? {
+    
+    func startEasyConnect(
+        operationId: Int64,
+        configuration: any EasyConnectConfigurationApi,
+        completion: @escaping (Result<ReaderApi, any Error>
+    ) -> Void) {
+        completion(.failure(PigeonError(code: "", message: "Method not implemented", details: nil)))
+    }
+    
+    func stopEasyConnect(operationId: Int64, completion: @escaping (Result<Void, any Error>) -> Void) {
+        completion(.failure(PigeonError(code: "", message: "Method not implemented", details: nil)))
+    }
+    
+    func getConnectedReader() throws -> ReaderApi? {
         return Terminal.shared.connectedReader?.toApi()
     }
     
-    func onCancelReaderReconnection() async throws {
-        try await _readerDelegate.cancelReconnection()
-    }
-    
-    func onListLocations(_ endingBefore: String?, _ limit: Int?, _ startingAfter: String?) async throws -> [LocationApi] {
-        let params = ListLocationsParametersBuilder()
-            .setEndingBefore(endingBefore)
-            .setStartingAfter(startingAfter)
-        limit.apply { params.setLimit(UInt($0)) }
-        do {
-            return try await Terminal.shared.listLocations(parameters: params.build()).0.map { $0.toApi() }
-        } catch let error as NSError {
-            throw error.toPlatformError()
+    func cancelReaderReconnection(completion: @escaping (Result<Void, any Error>) -> Void) {
+        handleResult(completion) {
+            try await self._readerDelegate.cancelReconnection()
         }
     }
     
-    func onInstallAvailableUpdate() throws {
+    func listLocations(
+        endingBefore: String?,
+        limit: Int64?,
+        startingAfter: String?,
+        completion: @escaping (Result<[LocationApi], any Error>
+    ) -> Void) {
+        handleResult(completion) {
+            let params = ListLocationsParametersBuilder()
+                .setEndingBefore(endingBefore)
+                .setStartingAfter(startingAfter)
+            limit.apply { params.setLimit(UInt($0)) }
+            
+            return try await Terminal.shared.listLocations(parameters: params.build()).0.map { $0.toApi() }
+        }
+    }
+    
+    func installAvailableUpdate() throws {
         Terminal.shared.installAvailableUpdate()
     }
     
-    func onCancelReaderUpdate() async throws {
-        try await _readerDelegate.cancelUpdate()
+    func cancelReaderUpdate(completion: @escaping (Result<Void, any Error>) -> Void) {
+        handleResult(completion) {
+            try await self._readerDelegate.cancelUpdate()
+        }
     }
     
-    func onRebootReader() async throws {
-        do {
+    func rebootReader(completion: @escaping (Result<Void, any Error>) -> Void) {
+        handleResult(completion) {
             try await Terminal.shared.rebootReader()
-        } catch let error as NSError {
-            throw error.toPlatformError()
         }
     }
     
-    func onDisconnectReader() async throws {
-        do {
+    func disconnectReader(completion: @escaping (Result<Void, any Error>) -> Void) {
+        handleResult(completion) {
             try await Terminal.shared.disconnectReader()
-        } catch let error as NSError {
-            throw error.toPlatformError()
         }
     }
     
-    func onSetSimulatorConfiguration(_ configuration: SimulatorConfigurationApi) throws {
+    func setSimulatorConfiguration(configuration: SimulatorConfigurationApi) throws {
         Terminal.shared.simulatorConfiguration.availableReaderUpdate = configuration.update.toHost()
         Terminal.shared.simulatorConfiguration.simulatedCard = configuration.simulatedCard.toHost()
-        Terminal.shared.simulatorConfiguration.simulatedTipAmount = configuration.simulatedTipAmount?.nsNumberValue
+        Terminal.shared.simulatorConfiguration.simulatedTipAmount = configuration.simulatedTipAmount?.toNsNumber()
     }
     
 // MARK: - Taking payments
     
     private var _paymentIntents: [String: PaymentIntent] = [:]
     
-    func onGetPaymentStatus() throws -> PaymentStatusApi {
+    func getPaymentStatus() throws -> PaymentStatusApi {
         return Terminal.shared.paymentStatus.toApi()
     }
     
-    func onCreatePaymentIntent(_ parameters: PaymentIntentParametersApi) async throws -> PaymentIntentApi {
-        do {
+    func createPaymentIntent(parameters: PaymentIntentParametersApi, completion: @escaping (Result<PaymentIntentApi, any Error>) -> Void) {
+        handleResult(completion) {
             let paymentIntent = try await Terminal.shared.createPaymentIntent(parameters.toHost())
-            _paymentIntents[paymentIntent.stripeId!] = paymentIntent
+            self._paymentIntents[paymentIntent.stripeId!] = paymentIntent
             return paymentIntent.toApi()
-        } catch let error as NSError {
-            throw error.toPlatformError()
         }
     }
-
-    func onRetrievePaymentIntent(
-        _ clientSecret: String
-    ) async throws -> PaymentIntentApi {
-        do {
+    
+    func retrievePaymentIntent(clientSecret: String, completion: @escaping (Result<PaymentIntentApi, any Error>) -> Void) {
+        handleResult(completion) {
             let paymentIntent = try await Terminal.shared.retrievePaymentIntent(clientSecret: clientSecret)
-            _paymentIntents[paymentIntent.stripeId!] = paymentIntent
+            self._paymentIntents[paymentIntent.stripeId!] = paymentIntent
             return paymentIntent.toApi()
-        } catch let error as NSError {
-            throw error.toPlatformError()
         }
     }
-
-    private var _cancelablesCollectPaymentMethod: [Int: Cancelable] = [:]
     
-    func onStartCollectPaymentMethod(
-        _ result: Result<PaymentIntentApi>,
-        _ operationId: Int,
-        _ paymentIntentId: String,
-        _ requestDynamicCurrencyConversion: Bool,
-        _ surchargeNotice: String?,
-        _ skipTipping: Bool,
-        _ tippingConfiguration: TippingConfigurationApi?,
-        _ shouldUpdatePaymentIntent: Bool,
-        _ customerCancellationEnabled: Bool,
-        _ allowRedisplay: AllowRedisplayApi
-    ) throws {
-        let paymentIntent = try _findPaymentIntent(paymentIntentId)
-        let config = CollectPaymentIntentConfigurationBuilder()
-            .setSurchargeNotice(surchargeNotice)
-            .setRequestDynamicCurrencyConversion(requestDynamicCurrencyConversion)
-            .setSkipTipping(skipTipping)
-            .setTippingConfiguration(try tippingConfiguration?.toHost())
-            .setUpdatePaymentIntent(shouldUpdatePaymentIntent)
-            .setCustomerCancellation(customerCancellationEnabled ? .enableIfAvailable : .disableIfAvailable)
-            .setAllowRedisplay(allowRedisplay.toHost())
-            
-        self._cancelablesCollectPaymentMethod[operationId] = Terminal.shared.collectPaymentMethod(
-            paymentIntent,
-            collectConfig: try config.build(),
-            completion: { paymentIntent, error in
-            self._cancelablesCollectPaymentMethod.removeValue(forKey: operationId)
-            if let error = error as? NSError {
-                result.error(error.toPlatformError())
-                return
-            }
-            self._paymentIntents[paymentIntent!.stripeId!] = paymentIntent!
-            result.success(paymentIntent!.toApi())
-        })
-    }
-
-    func onStopCollectPaymentMethod(
-        _ operationId: Int
-    ) async throws {
-        try await _cancelablesCollectPaymentMethod.removeValue(forKey: operationId)?.cancel()
+    private var _cancelablesCollectPaymentMethod: [Int64: Cancelable] = [:]
+    
+    func startProcessPaymentIntent(
+        operationId: Int64,
+        paymentIntentId: String,
+        requestDynamicCurrencyConversion: Bool,
+        surchargeNotice: String?,
+        skipTipping: Bool,
+        tippingConfiguration: TippingConfigurationApi?,
+        shouldUpdatePaymentIntent: Bool,
+        customerCancellationEnabled: Bool,
+        allowRedisplay: AllowRedisplayApi,
+        confirmConfiguration: ConfirmPaymentIntentConfigurationApi?,
+        completion: @escaping (Result<PaymentIntentApi, any Error>
+    ) -> Void) {
+        handleError(completion) {
+            let paymentIntent = try _findPaymentIntent(paymentIntentId)
+            let config = CollectPaymentIntentConfigurationBuilder()
+                .setSurchargeNotice(surchargeNotice)
+                .setRequestDynamicCurrencyConversion(requestDynamicCurrencyConversion)
+                .setSkipTipping(skipTipping)
+                .setTippingConfiguration(try tippingConfiguration?.toHost())
+                .setUpdatePaymentIntent(shouldUpdatePaymentIntent)
+                .setCustomerCancellation(customerCancellationEnabled ? .enableIfAvailable : .disableIfAvailable)
+                .setAllowRedisplay(allowRedisplay.toHost())
+                
+            self._cancelablesCollectPaymentMethod[operationId] = Terminal.shared.collectPaymentMethod(
+                paymentIntent,
+                collectConfig: try config.build(),
+                completion: { paymentIntent, error in
+                self._cancelablesCollectPaymentMethod.removeValue(forKey: operationId)
+                if let error = error as? NSError {
+                    completion(.failure(error.toPlatformError()))
+                    return
+                }
+                self._paymentIntents[paymentIntent!.stripeId!] = paymentIntent!
+                completion(.success(paymentIntent!.toApi()))
+            })
+        }
     }
     
+    func stopProcessPaymentIntent(operationId: Int64, completion: @escaping (Result<Void, any Error>) -> Void) {
+        handleResult(completion) {
+            try await self._cancelablesCollectPaymentMethod.removeValue(forKey: operationId)?.cancel()
+        }
+    }
+    
+    func cancelPaymentIntent(paymentIntentId: String, completion: @escaping (Result<PaymentIntentApi, any Error>) -> Void) {
+        handleResult(completion) {
+            let paymentIntent = try self._findPaymentIntent(paymentIntentId)
+            let newPaymentIntent = try await Terminal.shared.cancelPaymentIntent(paymentIntent)
+            self._paymentIntents.removeValue(forKey: paymentIntentId)
+            return newPaymentIntent.toApi()
+        }
+    }
+/*
     private var _confirmPaymentIntentCancelables: [Int: Cancelable] = [:]
     
     func onStartConfirmPaymentIntent(
@@ -256,85 +277,90 @@ public class TerminalPlugin: NSObject, FlutterPlugin, TerminalPlatformApi {
     func onStopConfirmPaymentIntent(_ operationId: Int) async throws {
         try await _cancelablesCollectPaymentMethod.removeValue(forKey: operationId)?.cancel()
     }
-    
-    func onCancelPaymentIntent(_ paymentIntentId: String) async throws -> PaymentIntentApi {
-        do {
-            let paymentIntent = try _findPaymentIntent(paymentIntentId)
-            let newPaymentIntent = try await Terminal.shared.cancelPaymentIntent(paymentIntent)
-            _paymentIntents.removeValue(forKey: paymentIntentId)
-            return newPaymentIntent.toApi()
-        } catch let error as NSError {
-            throw error.toPlatformError()
-        }
-    }
-    
+ */
 // MARK: - Saving payment details for later use
    
     private var _setupIntents: [String: SetupIntent] = [:]
-    private var _cancelablesCollectSetupIntentPaymentMethod: [Int: Cancelable] = [:]
+    private var _cancelablesCollectSetupIntentPaymentMethod: [Int64: Cancelable] = [:]
     
-    func onCreateSetupIntent(
-        _ customerId: String?,
-        _ metadata: [String : String]?,
-        _ onBehalfOf: String?,
-        _ description: String?,
-        _ usage: SetupIntentUsageApi?
-    ) async throws -> SetupIntentApi {
-        let params = SetupIntentParametersBuilder()
-        params.setCustomer(customerId)
-        params.setMetadata(metadata)
-        params.setOnBehalfOf(onBehalfOf)
-        params.setStripeDescription(description)
-        usage.apply { params.setUsage($0.toHost()) }
-        do {
-            let setupIntent = try await Terminal.shared.createSetupIntent(params.build())
-            _setupIntents[setupIntent.stripeId!] = setupIntent
-            return setupIntent.toApi()
-        } catch let error as NSError {
-            throw error.toPlatformError()
+    func createSetupIntent(
+        customerId: String?,
+        metadata: [String : String]?,
+        onBehalfOf: String?,
+        description: String?,
+        usage: SetupIntentUsageApi?,
+        completion: @escaping (Result<SetupIntentApi, any Error>
+    ) -> Void) {
+        handleResult(completion) {
+            let params = SetupIntentParametersBuilder()
+            params.setCustomer(customerId)
+            params.setMetadata(metadata)
+            params.setOnBehalfOf(onBehalfOf)
+            params.setStripeDescription(description)
+            usage.apply { params.setUsage($0.toHost()) }
+            do {
+                let setupIntent = try await Terminal.shared.createSetupIntent(params.build())
+                self._setupIntents[setupIntent.stripeId!] = setupIntent
+                return setupIntent.toApi()
+            } catch let error as NSError {
+                throw error.toPlatformError()
+            }
         }
     }
     
-    func onRetrieveSetupIntent(_ clientSecret: String) async throws -> SetupIntentApi {
-        do {
+    func retrieveSetupIntent(clientSecret: String, completion: @escaping (Result<SetupIntentApi, any Error>) -> Void) {
+        handleResult(completion) {
             let setupIntent = try await Terminal.shared.retrieveSetupIntent(clientSecret: clientSecret)
-            _setupIntents[setupIntent.stripeId!] = setupIntent
+            self._setupIntents[setupIntent.stripeId!] = setupIntent
             return setupIntent.toApi()
-        } catch let error as NSError {
-            throw error.toPlatformError()
         }
     }
-    func onStartCollectSetupIntentPaymentMethod(
-        _ result: Result<SetupIntentApi>,
-        _ operationId: Int,
-        _ setupIntentId: String,
-        _ allowRedisplay: AllowRedisplayApi,
-        _ customerCancellationEnabled: Bool
-    ) throws {
-        let setupIntent = try _findSetupIntent(setupIntentId)
-        let config = CollectSetupIntentConfigurationBuilder()
-            .setCustomerCancellation(customerCancellationEnabled ? .enableIfAvailable : .disableIfAvailable)
-        
-        _cancelablesCollectSetupIntentPaymentMethod[operationId] = Terminal.shared.collectSetupIntentPaymentMethod(
-            setupIntent,
-            allowRedisplay: allowRedisplay.toHost(),
-            setupConfig: try config.build(),
-            completion: { setupIntent, error in
-                self._cancelablesCollectSetupIntentPaymentMethod.removeValue(forKey: operationId)
-                if let error = error as? NSError {
-                    result.error(error.toPlatformError())
-                    return
-                }
-                self._setupIntents[setupIntent!.stripeId!] = setupIntent!
-                result.success(setupIntent!.toApi())
-        })
+    
+    func startProcessSetupIntent(
+        operationId: Int64,
+        setupIntentId: String,
+        allowRedisplay: AllowRedisplayApi,
+        customerCancellationEnabled: Bool,
+        completion: @escaping (Result<SetupIntentApi, any Error>
+    ) -> Void) {
+        handleError(completion) {
+            let setupIntent = try self._findSetupIntent(setupIntentId)
+            let config = CollectSetupIntentConfigurationBuilder()
+                .setCustomerCancellation(customerCancellationEnabled ? .enableIfAvailable : .disableIfAvailable)
+            
+            self._cancelablesCollectSetupIntentPaymentMethod[operationId] = Terminal.shared.processSetupIntent(
+                setupIntent,
+                allowRedisplay: allowRedisplay.toHost(),
+                collectConfig: try config.build(),
+                completion: { setupIntent, error in
+                    self._cancelablesCollectSetupIntentPaymentMethod.removeValue(forKey: operationId)
+                    if let error = error as? NSError {
+                        completion(.failure(error.toPlatformError()))
+                        return
+                    }
+                    self._setupIntents[setupIntent!.stripeId!] = setupIntent!
+                    completion(.success(setupIntent!.toApi()))
+            })
+        }
     }
     
-    func onStopCollectSetupIntentPaymentMethod(_ operationId: Int) async throws {
-        try await _cancelablesCollectSetupIntentPaymentMethod.removeValue(forKey: operationId)?.cancel()
+    func stopProcessSetupIntent(operationId: Int64, completion: @escaping (Result<Void, any Error>) -> Void) {
+        handleResult(completion) {
+            try await self._cancelablesCollectSetupIntentPaymentMethod.removeValue(forKey: operationId)?.cancel()
+        }
     }
     
-    private var _confirmSetupIntentCancelables: [Int: Cancelable] = [:]
+    func cancelSetupIntent(setupIntentId: String, completion: @escaping (Result<SetupIntentApi, any Error>) -> Void) {
+        handleResult(completion) {
+            let setupIntent = try self._findSetupIntent(setupIntentId)
+            let newSetupIntent = try await Terminal.shared.cancelSetupIntent(setupIntent)
+            self._setupIntents.removeValue(forKey: setupIntentId)
+            return newSetupIntent.toApi()
+        }
+    }
+
+    
+    /*private var _confirmSetupIntentCancelables: [Int: Cancelable] = [:]
     
     func onStartConfirmSetupIntent(
         _ result: Result<SetupIntentApi>,
@@ -355,58 +381,66 @@ public class TerminalPlugin: NSObject, FlutterPlugin, TerminalPlatformApi {
     
     func onStopConfirmSetupIntent(_ operationId: Int) async throws {
         try await _confirmSetupIntentCancelables.removeValue(forKey: operationId)?.cancel()
-    }
+    }*/
+// MARK: - Card-present refunds
+    private var _cancelablesCollectRefundPaymentMethod: [Int64: Cancelable] = [:]
     
-    func onCancelSetupIntent(_ setupIntentId: String) async throws -> SetupIntentApi {
-        let setupIntent = try _findSetupIntent(setupIntentId)
-        do {
-            let newSetupIntent = try await Terminal.shared.cancelSetupIntent(setupIntent)
-            _setupIntents.removeValue(forKey: setupIntentId)
-            return newSetupIntent.toApi()
-        } catch let error as NSError {
-            throw error.toPlatformError()
+    func startProcessRefund(
+        operationId: Int64,
+        chargeId: String?,
+        paymentIntentId: String?,
+        paymentIntentClientSecret: String?,
+        amount: Int64,
+        currency: String,
+        metadata: [String : String]?,
+        reverseTransfer: Bool?,
+        refundApplicationFee: Bool?,
+        customerCancellationEnabled: Bool,
+        completion: @escaping (Result<RefundApi, any Error>
+    ) -> Void) {
+        handleError(completion) {
+            let params = chargeId != nil
+                ? RefundParametersBuilder(
+                    chargeId: chargeId!,
+                    amount: amount.toUInt(),
+                    currency: currency
+                )
+                : RefundParametersBuilder(
+                    paymentIntentId: paymentIntentId!,
+                    clientSecret: paymentIntentClientSecret!,
+                    amount: amount.toUInt(),
+                    currency: currency
+                )
+            params.setMetadata(metadata)
+            reverseTransfer.apply(params.setReverseTransfer)
+            params.setMetadata(metadata)
+            
+            let config = CollectRefundConfigurationBuilder()
+                .setCustomerCancellation(customerCancellationEnabled ? .enableIfAvailable : .disableIfAvailable)
+            
+            _cancelablesCollectRefundPaymentMethod[operationId] = Terminal.shared.processRefund(
+                try params.build(),
+                collectConfig: try config.build(),
+                completion: { refund, error in
+                    self._cancelablesCollectRefundPaymentMethod.removeValue(forKey: operationId)
+                    if let error = error {
+                        completion(.failure(error.toPlatformError()))
+                        return
+                    }
+                    completion(.success(refund!.toApi()))
+            })
         }
     }
-// MARK: - Card-present refunds
-    private var _cancelablesCollectRefundPaymentMethod: [Int: Cancelable] = [:]
+    
+    func stopProcessRefund(operationId: Int64, completion: @escaping (Result<Void, any Error>) -> Void) {
+        handleResult(completion) {
+            try await self._cancelablesCollectRefundPaymentMethod.removeValue(forKey: operationId)?.cancel()
+        }
+    }
 
-    func onStartCollectRefundPaymentMethod(
-        _ result: Result<Void>,
-        _ operationId: Int,
-        _ chargeId: String,
-        _ amount: Int,
-        _ currency: String,
-        _ metadata: [String: String]?,
-        _ reverseTransfer: Bool?,
-        _ refundApplicationFee: Bool?,
-        _ customerCancellationEnabled: Bool
-    ) throws {
-        let params = RefundParametersBuilder(chargeId: chargeId, amount: UInt(amount), currency: currency)
-        params.setMetadata(metadata)
-        reverseTransfer.apply(params.setReverseTransfer)
-        params.setMetadata(metadata)
-        
-        let config = CollectRefundConfigurationBuilder()
-            .setCustomerCancellation(customerCancellationEnabled ? .enableIfAvailable : .disableIfAvailable)
-        
-        _cancelablesCollectRefundPaymentMethod[operationId] = Terminal.shared.collectRefundPaymentMethod(
-            try params.build(),
-            refundConfig: try config.build(),
-            completion: { error in
-                self._cancelablesCollectRefundPaymentMethod.removeValue(forKey: operationId)
-                if let error = error as? NSError {
-                    result.error(error.toPlatformError())
-                    return
-                }
-                result.success(())
-        })
-    }
+
     
-    func onStopCollectRefundPaymentMethod(_ operationId: Int) async throws {
-        try await _cancelablesCollectRefundPaymentMethod.removeValue(forKey: operationId)?.cancel()
-    }
-    
-    private var _confirmRefundCancelables: [Int: Cancelable] = [:]
+    /*private var _confirmRefundCancelables: [Int: Cancelable] = [:]
     
     func onStartConfirmRefund(_ result: Result<RefundApi>, _ operationId: Int) throws {
         _confirmRefundCancelables[operationId] = Terminal.shared.confirmRefund(completion: { refund, error in
@@ -421,45 +455,40 @@ public class TerminalPlugin: NSObject, FlutterPlugin, TerminalPlatformApi {
     
     func onStopConfirmRefund(_ operationId: Int) async throws {
         try await _confirmRefundCancelables.removeValue(forKey: operationId)?.cancel()
-    }
+    }*/
     
 
 
 // MARK: - Display information to customers
     
-    func onSetReaderDisplay(
-        _ cart: CartApi
-    ) async throws {
-        do {
+    func setReaderDisplay(cart: CartApi, completion: @escaping (Result<Void, any Error>) -> Void) {
+        handleResult(completion) {
             try await Terminal.shared.setReaderDisplay(cart.toHost())
-        } catch let error as NSError {
-            throw error.toPlatformError()
-        }
-    }
-
-    func onClearReaderDisplay() async throws {
-        do {
-            try await Terminal.shared.clearReaderDisplay()
-        } catch let error as NSError {
-            throw error.toPlatformError()
         }
     }
     
-    func onSetTapToPayUXConfiguration(_ configuration: TapToPayUxConfigurationApi) throws {
-        throw PlatformError("mek_stripe_terminal", "setTapToPayUXConfiguration method not supported on ios device");
+    func clearReaderDisplay(completion: @escaping (Result<Void, any Error>) -> Void) {
+        handleResult(completion) {
+            try await Terminal.shared.clearReaderDisplay()
+        }
     }
+    
+    func setTapToPayUXConfiguration(configuration: TapToPayUxConfigurationApi) throws {
+        throw PigeonError(code: "", message: "setTapToPayUXConfiguration method not supported on ios device", details: nil);
 
-    func onIsTapToPayAccountLinked(_ result: Result<Bool>, _ onBehalfOf: String?) throws {
+    }
+    
+    func isTapToPayAccountLinked(onBehalfOf: String?, completion: @escaping (Result<Bool, any Error>) -> Void) {
         if #available(iOS 16.4, *) {
             Terminal.shared.isTapToPayAccountLinked(onBehalfOf) { linked, error in
                 if let error = error {
-                    result.error((error as NSError).toPlatformError())
+                    completion(.failure((error as NSError).toPlatformError()))
                 } else {
-                    result.success(linked?.boolValue ?? false)
+                    completion(.success(linked?.boolValue ?? false))
                 }
             }
         } else {
-            result.success(false)
+            completion(.success(false))
         }
     }
     
@@ -472,20 +501,20 @@ public class TerminalPlugin: NSObject, FlutterPlugin, TerminalPlatformApi {
         
         self._cancelablesCollectPaymentMethod.values.forEach { $0.cancel { error in } }
         self._cancelablesCollectPaymentMethod = [:]
-        self._confirmSetupIntentCancelables.values.forEach { $0.cancel { error in } }
-        self._confirmSetupIntentCancelables = [:]
+        // self._confirmSetupIntentCancelables.values.forEach { $0.cancel { error in } }
+        // self._confirmSetupIntentCancelables = [:]
         self._paymentIntents = [:]
 
         self._cancelablesCollectSetupIntentPaymentMethod.values.forEach { $0.cancel { error in } }
         self._cancelablesCollectSetupIntentPaymentMethod = [:]
-        self._confirmPaymentIntentCancelables.values.forEach { $0.cancel { error in } }
-        self._confirmPaymentIntentCancelables = [:]
+        // self._confirmPaymentIntentCancelables.values.forEach { $0.cancel { error in } }
+        // self._confirmPaymentIntentCancelables = [:]
         self._setupIntents = [:]
 
         self._cancelablesCollectRefundPaymentMethod.values.forEach { $0.cancel { error in } }
         self._cancelablesCollectRefundPaymentMethod = [:]
-        self._confirmRefundCancelables.values.forEach { $0.cancel { error in } }
-        self._confirmRefundCancelables = [:]
+        // self._confirmRefundCancelables.values.forEach { $0.cancel { error in } }
+        // self._confirmRefundCancelables = [:]
     }
 
     private func _findReader(_ serialNumber: String) throws -> Reader {
@@ -509,5 +538,24 @@ public class TerminalPlugin: NSObject, FlutterPlugin, TerminalPlatformApi {
             throw createApiException(TerminalExceptionCodeApi.setupIntentNotRecovered).toPlatformError()
         }
         return setupIntent
+    }
+}
+
+func handleResult<R>(_ completion: @escaping (Result<R, any Error>) -> Void, callback: @escaping () async throws -> R) {
+    Task {
+        do {
+            let result = try await callback();
+            completion(.success(result))
+        } catch let error as NSError {
+            completion(.failure(error.toPlatformError()))
+        }
+    }
+}
+
+func handleError<R>(_ completion: @escaping (Result<R, any Error>) -> Void, callback: () throws -> Void) {
+    do {
+        try callback();
+    } catch let error as NSError {
+        completion(.failure(error.toPlatformError()))
     }
 }

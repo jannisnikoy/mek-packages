@@ -1,21 +1,7 @@
-import 'package:one_for_all/one_for_all.dart';
+import 'package:mek_stripe_terminal/src/terminal_api.g.dart';
 
-/// Filters for Internet reader discovery.
-@SerializableClass(flutterToHost: true)
-sealed class DiscoveryFilter {
-  const DiscoveryFilter();
-}
+typedef DiscoveryFilter = DiscoveryFilterApi;
 
-/// Filters internet discovery by reader ID.
-class DiscoveryFilterByReaderId extends DiscoveryFilter {
-  final String readerId;
+typedef DiscoveryFilterByReaderId = DiscoveryFilterByReaderIdApi;
 
-  const DiscoveryFilterByReaderId(this.readerId);
-}
-
-/// Filters internet discovery by reader serial number.
-class DiscoveryFilterBySerialNumber extends DiscoveryFilter {
-  final String serialNumber;
-
-  const DiscoveryFilterBySerialNumber(this.serialNumber);
-}
+typedef DiscoveryFilterBySerialNumber = DiscoveryFilterBySerialNumberApi;

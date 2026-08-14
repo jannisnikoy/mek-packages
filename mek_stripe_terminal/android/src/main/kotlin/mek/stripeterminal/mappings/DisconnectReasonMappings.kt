@@ -1,7 +1,7 @@
 package mek.stripeterminal.mappings
 
 import com.stripe.stripeterminal.external.models.DisconnectReason
-import mek.stripeterminal.api.DisconnectReasonApi
+import DisconnectReasonApi
 
 fun DisconnectReason.toApi(): DisconnectReasonApi {
     return when (this) {

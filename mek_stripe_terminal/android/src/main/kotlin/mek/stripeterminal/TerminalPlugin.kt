@@ -1,5 +1,6 @@
 package mek.stripeterminal
 
+import ClearCachedCredentialsResultApi
 import android.content.Context
 import com.stripe.stripeterminal.Terminal
 import com.stripe.stripeterminal.TerminalApplicationDelegate
@@ -30,71 +31,64 @@ import com.stripe.stripeterminal.log.LogLevel
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
-import mek.stripeterminal.api.AllowRedisplayApi
-import mek.stripeterminal.api.CartApi
-import mek.stripeterminal.api.ClearCachedCredentialsResultApi
-import mek.stripeterminal.api.ConfirmPaymentIntentConfigurationApi
-import mek.stripeterminal.api.ConnectionConfigurationApi
-import mek.stripeterminal.api.ConnectionStatusApi
-import mek.stripeterminal.api.DeviceTypeApi
-import mek.stripeterminal.api.DiscoverReadersControllerApi
-import mek.stripeterminal.api.DiscoveryConfigurationApi
-import mek.stripeterminal.api.EasyConnectConfigurationApi
-import mek.stripeterminal.api.LocationApi
-import mek.stripeterminal.api.PaymentIntentApi
-import mek.stripeterminal.api.PaymentIntentParametersApi
-import mek.stripeterminal.api.PaymentStatusApi
-import mek.stripeterminal.api.ReaderApi
-import mek.stripeterminal.api.RefundApi
-import mek.stripeterminal.api.Result
-import mek.stripeterminal.api.SetupIntentApi
-import mek.stripeterminal.api.SetupIntentUsageApi
-import mek.stripeterminal.api.SimulatorConfigurationApi
-import mek.stripeterminal.api.TapToPayUxConfigurationApi
-import mek.stripeterminal.api.TerminalExceptionCodeApi
-import mek.stripeterminal.api.TerminalHandlersApi
-import mek.stripeterminal.api.TerminalPlatformApi
-import mek.stripeterminal.api.TippingConfigurationApi
+import AllowRedisplayApi
+import CartApi
+import ConfirmPaymentIntentConfigurationApi
+import ConnectionConfigurationApi
+import ConnectionStatusApi
+import TerminalHandlersApi
+import TerminalPlatformApi
+import DeviceTypeApi
+import DiscoverReadersStreamHandler
+import DiscoveryConfigurationApi
+import EasyConnectConfigurationApi
+import LocationApi
+import PaymentIntentApi
+import PaymentIntentParametersApi
+import PaymentStatusApi
+import ReaderApi
+import RefundApi
+import SetupIntentApi
+import SetupIntentUsageApi
+import SimulatorConfigurationApi
+import TapToPayUxConfigurationApi
+import TerminalExceptionCodeApi
+import TippingConfigurationApi
+import mek.stripeterminal.mappings.createApiException
+import mek.stripeterminal.mappings.createError
+import mek.stripeterminal.mappings.mapExceptionToApi
 import mek.stripeterminal.mappings.toApi
 import mek.stripeterminal.mappings.toHost
-import mek.stripeterminal.mappings.toPlatformError
-import mek.stripeterminal.plugin.DiscoverReadersSubject
+import mek.stripeterminal.plugin.DiscoverReadersStreamController
 import mek.stripeterminal.plugin.ReaderDelegatePlugin
 import mek.stripeterminal.plugin.TerminalDelegatePlugin
 import mek.stripeterminal.plugin.TerminalErrorHandler
 
 class TerminalPlugin : FlutterPlugin, ActivityAware {
     companion object {
-        private var context: Context? = null
         private var handlerOwner: TerminalPlugin? = null
     }
 
     private lateinit var platform: TerminalPlatformPlugin
-    private lateinit var discoverReadersController: DiscoverReadersControllerApi
+    private lateinit var discoverReadersStreamController: DiscoverReadersStreamController
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        context = binding.applicationContext
-        val discoverReadersSubject = DiscoverReadersSubject()
-        discoverReadersController = DiscoverReadersControllerApi(binding.binaryMessenger);
-        discoverReadersController.setHandler(
-            discoverReadersSubject::onListen,
-            discoverReadersSubject::onCancel
-        )
+        discoverReadersStreamController = DiscoverReadersStreamController();
+        DiscoverReadersStreamHandler.register(binding.binaryMessenger, discoverReadersStreamController)
+
         platform = TerminalPlatformPlugin(
             applicationContext = binding.applicationContext,
             handlers = TerminalHandlersApi(binding.binaryMessenger),
-            discoverReadersSubject = discoverReadersSubject,
+            discoverReadersStreamController = discoverReadersStreamController,
         )
-        TerminalPlatformApi.setHandler(binding.binaryMessenger, platform)
+        TerminalPlatformApi.setUp(binding.binaryMessenger, platform)
         handlerOwner = this
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        context = null
         if (Terminal.isInitialized()) platform.clean()
-        discoverReadersController.removeHandler()
         if (handlerOwner === this) {
-            TerminalPlatformApi.removeHandler()
+            TerminalPlatformApi.setUp(binding.binaryMessenger, null)
             handlerOwner = null
         }
     }
@@ -114,12 +108,12 @@ class TerminalPlugin : FlutterPlugin, ActivityAware {
 class TerminalPlatformPlugin(
     private val applicationContext: Context,
     private val handlers: TerminalHandlersApi,
-    private val discoverReadersSubject: DiscoverReadersSubject,
+    private val discoverReadersStreamController: DiscoverReadersStreamController,
 ) : TerminalPlatformApi {
 
     private val terminal: Terminal get() = Terminal.getInstance()
 
-    override fun onInit(shouldPrintLogs: Boolean) {
+    override fun initialize(shouldPrintLogs: Boolean) {
         // If a hot restart is performed in flutter the terminal is already initialized but we need to
         // clean it up
         if (Terminal.isInitialized()) {
@@ -137,26 +131,27 @@ class TerminalPlatformPlugin(
         )
     }
 
-    override fun onClearCachedCredentials(): ClearCachedCredentialsResultApi {
+    override fun clearCachedCredentials(): ClearCachedCredentialsResultApi {
         val result = terminal.clearCachedCredentials()
         if (result.isSuccessful) {
             clean()
         }
         return ClearCachedCredentialsResultApi(
             isSuccessful = result.isSuccessful,
-            error = result.error?.toApi(),
+            error = if (result.error != null) mapExceptionToApi(result.error!!) else null,
         )
+
     }
 
     // region Reader discovery, connection and updates
     private val discoveredReaders: List<Reader>
-        get() = discoverReadersSubject.readers
+        get() = discoverReadersStreamController.readers
 
     private val readerDelegate: ReaderDelegatePlugin = ReaderDelegatePlugin(handlers)
 
-    override fun onGetConnectionStatus(): ConnectionStatusApi = terminal.connectionStatus.toApi()
+    override fun getConnectionStatus(): ConnectionStatusApi = terminal.connectionStatus.toApi()
 
-    override fun onSupportsReadersOfType(
+    override fun supportsReadersOfType(
         deviceType: DeviceTypeApi?,
         discoveryConfiguration: DiscoveryConfigurationApi
     ): Boolean {
@@ -171,70 +166,76 @@ class TerminalPlatformPlugin(
         return result.isSupported
     }
 
-    override fun onConnectReader(result: Result<ReaderApi>, serialNumber: String, configuration: ConnectionConfigurationApi) {
+    override fun applyDiscoverReadersParameters(configuration: DiscoveryConfigurationApi) {
+        discoverReadersStreamController.configuration = configuration.toHost()
+    }
+
+    override fun connectReader(
+        serialNumber: String,
+        configuration: ConnectionConfigurationApi,
+        callback: (Result<ReaderApi>) -> Unit
+    ) {
         val reader = findActiveReader(serialNumber)
 
         terminal.connectReader(
             reader,
             configuration.toHost(readerDelegate),
-            object : TerminalErrorHandler(result::error), ReaderCallback {
-                override fun onSuccess(reader: Reader) = result.success(reader.toApi())
+            object : TerminalErrorHandler<ReaderApi>(callback), ReaderCallback {
+                override fun onSuccess(reader: Reader) = callback(Result.success(reader.toApi()))
             }
         )
     }
 
-    override fun onStartEasyConnect(
-        result: Result<ReaderApi>,
+    private var easyConnectCancelables = HashMap<Long, Cancelable>()
+
+    override fun startEasyConnect(
         operationId: Long,
-        configuration: EasyConnectConfigurationApi
+        configuration: EasyConnectConfigurationApi,
+        callback: (Result<ReaderApi>) -> Unit
     ) {
-        try {
-            val hostConfiguration = configuration.toHost(readerDelegate)
-            easyConnectCancelables[operationId] = terminal.easyConnect(
-                hostConfiguration,
-                object : TerminalErrorHandler(result::error), ReaderCallback {
-                    override fun onFailure(e: TerminalException) {
-                        easyConnectCancelables.remove(operationId)
-                        super.onFailure(e)
-                    }
-
-                    override fun onSuccess(reader: Reader) {
-                        easyConnectCancelables.remove(operationId)
-                        result.success(reader.toApi())
-                    }
+        val hostConfiguration = configuration.toHost(readerDelegate)
+        easyConnectCancelables[operationId] = terminal.easyConnect(
+            hostConfiguration,
+            object : TerminalErrorHandler<ReaderApi>(callback), ReaderCallback {
+                override fun onFailure(e: TerminalException) {
+                    easyConnectCancelables.remove(operationId)
+                    super.onFailure(e)
                 }
-            )
-        } catch (e: IllegalArgumentException) {
-            result.error(
-                createApiError(TerminalExceptionCodeApi.UNKNOWN, e.message ?: "Invalid configuration")
-                    .toPlatformError()
-            )
-        }
+
+                override fun onSuccess(reader: Reader) {
+                    easyConnectCancelables.remove(operationId)
+                    callback(Result.success(reader.toApi()))
+                }
+            }
+        )
     }
 
-    override fun onStopEasyConnect(result: Result<Unit>, operationId: Long) {
+    override fun stopEasyConnect(
+        operationId: Long,
+        callback: (Result<Unit>) -> Unit
+    ) {
         easyConnectCancelables.remove(operationId)?.cancel(
-            object : TerminalErrorHandler(result::error), Callback {
-                override fun onSuccess() = result.success(Unit)
+            object : TerminalErrorHandler<Unit>(callback), Callback {
+                override fun onSuccess() = callback(Result.success(Unit))
             }
         )
     }
 
-    override fun onGetConnectedReader(): ReaderApi? = terminal.connectedReader?.toApi()
+    override fun getConnectedReader(): ReaderApi? = terminal.connectedReader?.toApi()
 
-    override fun onCancelReaderReconnection(result: Result<Unit>) {
+    override fun cancelReaderReconnection(callback: (Result<Unit>) -> Unit) {
         readerDelegate.cancelReconnect(
-            object : Callback, TerminalErrorHandler(result::error) {
-                override fun onSuccess() = result.success(Unit)
+            object : Callback, TerminalErrorHandler<Unit>(callback) {
+                override fun onSuccess() = callback(Result.success(Unit))
             }
         )
     }
 
-    override fun onListLocations(
-        result: Result<List<LocationApi>>,
+    override fun listLocations(
         endingBefore: String?,
         limit: Long?,
-        startingAfter: String?
+        startingAfter: String?,
+        callback: (Result<List<LocationApi>>) -> Unit
     ) {
         val params = ListLocationsParameters.Builder()
         params.endingBefore = endingBefore
@@ -242,72 +243,76 @@ class TerminalPlatformPlugin(
         params.limit = limit?.toInt()
         terminal.listLocations(
             params.build(),
-            object : TerminalErrorHandler(result::error), LocationListCallback {
+            object : TerminalErrorHandler<List<LocationApi>>(callback), LocationListCallback {
                 override fun onSuccess(locations: List<Location>, hasMore: Boolean) =
-                    result.success(locations.map { it.toApi() })
+                    callback(Result.success(locations.map { it.toApi() }))
             }
         )
     }
 
-    override fun onInstallAvailableUpdate() = terminal.installAvailableUpdate()
+    override fun installAvailableUpdate() = terminal.installAvailableUpdate()
 
-    override fun onCancelReaderUpdate(result: Result<Unit>) {
+    override fun cancelReaderUpdate(callback: (Result<Unit>) -> Unit) {
         readerDelegate.cancelUpdate(
-            object : Callback, TerminalErrorHandler(result::error) {
-                override fun onSuccess() = result.success(Unit)
+            object : Callback, TerminalErrorHandler<Unit>(callback) {
+                override fun onSuccess() = callback(Result.success(Unit))
             }
         )
     }
 
-    override fun onRebootReader(result: Result<Unit>) {
+    override fun rebootReader(callback: (Result<Unit>) -> Unit) {
         terminal.rebootReader(
-            object : TerminalErrorHandler(result::error), Callback {
-                override fun onSuccess() = result.success(Unit)
+            object : TerminalErrorHandler<Unit>(callback), Callback {
+                override fun onSuccess() = callback(Result.success(Unit))
             }
         )
     }
 
-    override fun onDisconnectReader(result: Result<Unit>) {
+    override fun disconnectReader(callback: (Result<Unit>) -> Unit) {
         terminal.disconnectReader(
-            object : TerminalErrorHandler(result::error), Callback {
-                override fun onSuccess() = result.success(Unit)
+            object : TerminalErrorHandler<Unit>(callback), Callback {
+                override fun onSuccess() = callback(Result.success(Unit))
             }
         )
     }
 
-    override fun onSetSimulatorConfiguration(configuration: SimulatorConfigurationApi) {
+    override fun setSimulatorConfiguration(configuration: SimulatorConfigurationApi) {
         terminal.simulatorConfiguration = configuration.toHost()
     }
+
+
     // endregion
 
     // region Taking Payment
     private var paymentIntents = HashMap<String, PaymentIntent>()
 
-    override fun onGetPaymentStatus(): PaymentStatusApi = terminal.paymentStatus.toApi()
+    override fun getPaymentStatus(): PaymentStatusApi  = terminal.paymentStatus.toApi()
 
-    override fun onCreatePaymentIntent(
-        result: Result<PaymentIntentApi>,
-        parameters: PaymentIntentParametersApi
+    override fun createPaymentIntent(
+        parameters: PaymentIntentParametersApi,
+        callback: (Result<PaymentIntentApi>) -> Unit
     ) {
         terminal.createPaymentIntent(
             params = parameters.toHost(),
             callback =
-            object : TerminalErrorHandler(result::error), PaymentIntentCallback {
-                override fun onSuccess(paymentIntent: PaymentIntent) {
-                    paymentIntents[paymentIntent.id!!] = paymentIntent
-                    result.success(paymentIntent.toApi())
+                object : TerminalErrorHandler<PaymentIntentApi>(callback), PaymentIntentCallback {
+                    override fun onSuccess(paymentIntent: PaymentIntent) {
+                        paymentIntents[paymentIntent.id!!] = paymentIntent
+                        callback(Result.success(paymentIntent.toApi()))
+                    }
                 }
-            }
-        )
-    }
+        )    }
 
-    override fun onRetrievePaymentIntent(result: Result<PaymentIntentApi>, clientSecret: String) {
+    override fun retrievePaymentIntent(
+        clientSecret: String,
+        callback: (Result<PaymentIntentApi>) -> Unit
+    ) {
         terminal.retrievePaymentIntent(
             clientSecret,
-            object : TerminalErrorHandler(result::error), PaymentIntentCallback {
+            object : TerminalErrorHandler<PaymentIntentApi>(callback), PaymentIntentCallback {
                 override fun onSuccess(paymentIntent: PaymentIntent) {
                     paymentIntents[paymentIntent.id!!] = paymentIntent
-                    result.success(paymentIntent.toApi())
+                    callback(Result.success(paymentIntent.toApi()))
                 }
             }
         )
@@ -340,8 +345,7 @@ class TerminalPlatformPlugin(
             .build()
     }
 
-    override fun onStartProcessPaymentIntent(
-        result: Result<PaymentIntentApi>,
+    override fun startProcessPaymentIntent(
         operationId: Long,
         paymentIntentId: String,
         requestDynamicCurrencyConversion: Boolean,
@@ -351,7 +355,8 @@ class TerminalPlatformPlugin(
         shouldUpdatePaymentIntent: Boolean,
         customerCancellationEnabled: Boolean,
         allowRedisplay: AllowRedisplayApi,
-        confirmConfiguration: ConfirmPaymentIntentConfigurationApi?
+        confirmConfiguration: ConfirmPaymentIntentConfigurationApi?,
+        callback: (Result<PaymentIntentApi>) -> Unit
     ) {
         val paymentIntent = findPaymentIntent(paymentIntentId)
         val collectConfig = buildCollectPaymentIntentConfiguration(
@@ -370,7 +375,7 @@ class TerminalPlatformPlugin(
             paymentIntent,
             collectConfig,
             confirmConfig,
-            object : TerminalErrorHandler(result::error), PaymentIntentCallback {
+            object : TerminalErrorHandler<PaymentIntentApi>(callback), PaymentIntentCallback {
                 override fun onFailure(e: TerminalException) {
                     processPaymentIntentCancelables.remove(operationId)
                     val paymentIntentUpdated = e.paymentIntent
@@ -383,28 +388,34 @@ class TerminalPlatformPlugin(
                 override fun onSuccess(paymentIntent: PaymentIntent) {
                     processPaymentIntentCancelables.remove(operationId)
                     paymentIntents.remove(paymentIntent.id)
-                    result.success(paymentIntent.toApi())
+                    callback(Result.success(paymentIntent.toApi()))
                 }
             }
         )
     }
 
-    override fun onStopProcessPaymentIntent(result: Result<Unit>, operationId: Long) {
+    override fun stopProcessPaymentIntent(
+        operationId: Long,
+        callback: (Result<Unit>) -> Unit
+    ) {
         processPaymentIntentCancelables.remove(operationId)?.cancel(
-            object : TerminalErrorHandler(result::error), Callback {
-                override fun onSuccess() = result.success(Unit)
+            object : TerminalErrorHandler<Unit>(callback), Callback {
+                override fun onSuccess() = callback(Result.success(Unit))
             }
         )
     }
 
-    override fun onCancelPaymentIntent(result: Result<PaymentIntentApi>, paymentIntentId: String) {
+    override fun cancelPaymentIntent(
+        paymentIntentId: String,
+        callback: (Result<PaymentIntentApi>) -> Unit
+    ) {
         val paymentIntent = findPaymentIntent(paymentIntentId)
         terminal.cancelPaymentIntent(
             paymentIntent,
-            object : TerminalErrorHandler(result::error), PaymentIntentCallback {
+            object : TerminalErrorHandler<PaymentIntentApi>(callback), PaymentIntentCallback {
                 override fun onSuccess(paymentIntent: PaymentIntent) {
                     paymentIntents.remove(paymentIntentId)
-                    result.success(paymentIntent.toApi())
+                    callback(Result.success(paymentIntent.toApi()))
                 }
             }
         )
@@ -413,13 +424,14 @@ class TerminalPlatformPlugin(
 
     // region Saving payment details for later use
     private var setupIntents = HashMap<String, SetupIntent>()
-    override fun onCreateSetupIntent(
-        result: Result<SetupIntentApi>,
+
+    override fun createSetupIntent(
         customerId: String?,
-        metadata: HashMap<String, String>?,
+        metadata: Map<String, String>?,
         onBehalfOf: String?,
         description: String?,
-        usage: SetupIntentUsageApi?
+        usage: SetupIntentUsageApi?,
+        callback: (Result<SetupIntentApi>) -> Unit
     ) {
         terminal.createSetupIntent(
             SetupIntentParameters.Builder()
@@ -429,22 +441,25 @@ class TerminalPlatformPlugin(
                 .setDescription(description)
                 .setUsage(usage?.toHost())
                 .build(),
-            object : TerminalErrorHandler(result::error), SetupIntentCallback {
+            object : TerminalErrorHandler<SetupIntentApi>(callback), SetupIntentCallback {
                 override fun onSuccess(setupIntent: SetupIntent) {
                     setupIntents[setupIntent.id!!] = setupIntent
-                    result.success(setupIntent.toApi())
+                    callback(Result.success(setupIntent.toApi()))
                 }
             }
         )
     }
 
-    override fun onRetrieveSetupIntent(result: Result<SetupIntentApi>, clientSecret: String) {
+    override fun retrieveSetupIntent(
+        clientSecret: String,
+        callback: (Result<SetupIntentApi>) -> Unit
+    ) {
         terminal.retrieveSetupIntent(
             clientSecret,
-            object : TerminalErrorHandler(result::error), SetupIntentCallback {
+            object : TerminalErrorHandler<SetupIntentApi>(callback), SetupIntentCallback {
                 override fun onSuccess(setupIntent: SetupIntent) {
                     setupIntents[setupIntent.id!!] = setupIntent
-                    result.success(setupIntent.toApi())
+                    callback(Result.success(setupIntent.toApi()))
                 }
             }
         )
@@ -452,12 +467,12 @@ class TerminalPlatformPlugin(
 
     private var processSetupIntentCancelables = HashMap<Long, Cancelable>()
 
-    override fun onStartProcessSetupIntent(
-        result: Result<SetupIntentApi>,
+    override fun startProcessSetupIntent(
         operationId: Long,
         setupIntentId: String,
         allowRedisplay: AllowRedisplayApi,
-        customerCancellationEnabled: Boolean
+        customerCancellationEnabled: Boolean,
+        callback: (Result<SetupIntentApi>) -> Unit
     ) {
         val setupIntent = findSetupIntent(setupIntentId)
         val customerCancellation = if (customerCancellationEnabled) {
@@ -473,7 +488,7 @@ class TerminalPlatformPlugin(
             setupIntent,
             allowRedisplay.toHost(),
             config.build(),
-            object : TerminalErrorHandler(result::error), SetupIntentCallback {
+            object : TerminalErrorHandler<SetupIntentApi>(callback), SetupIntentCallback {
                 override fun onFailure(e: TerminalException) {
                     processSetupIntentCancelables.remove(operationId)
                     super.onFailure(e)
@@ -482,29 +497,35 @@ class TerminalPlatformPlugin(
                 override fun onSuccess(setupIntent: SetupIntent) {
                     processSetupIntentCancelables.remove(operationId)
                     setupIntents[setupIntent.id!!] = setupIntent
-                    result.success(setupIntent.toApi())
+                    callback(Result.success(setupIntent.toApi()))
                 }
             }
         )
     }
 
-    override fun onStopProcessSetupIntent(result: Result<Unit>, operationId: Long) {
+    override fun stopProcessSetupIntent(
+        operationId: Long,
+        callback: (Result<Unit>) -> Unit
+    ) {
         processSetupIntentCancelables.remove(operationId)?.cancel(
-            object : TerminalErrorHandler(result::error), Callback {
-                override fun onSuccess() = result.success(Unit)
+            object : TerminalErrorHandler<Unit>(callback), Callback {
+                override fun onSuccess() = callback(Result.success(Unit))
             }
         )
     }
 
-    override fun onCancelSetupIntent(result: Result<SetupIntentApi>, setupIntentId: String) {
+    override fun cancelSetupIntent(
+        setupIntentId: String,
+        callback: (Result<SetupIntentApi>) -> Unit
+    ) {
         val setupIntent = findSetupIntent(setupIntentId)
         terminal.cancelSetupIntent(
             setupIntent,
             SetupIntentCancellationParameters.Builder().build(),
-            object : TerminalErrorHandler(result::error), SetupIntentCallback {
+            object : TerminalErrorHandler<SetupIntentApi>(callback), SetupIntentCallback {
                 override fun onSuccess(setupIntent: SetupIntent) {
                     setupIntents.remove(setupIntent.id)
-                    result.success(setupIntent.toApi())
+                    callback(Result.success(setupIntent.toApi()))
                 }
             }
         )
@@ -514,19 +535,18 @@ class TerminalPlatformPlugin(
     // region Saving payment details for later use
     private var processRefundCancelables = HashMap<Long, Cancelable>()
 
-    private var easyConnectCancelables = HashMap<Long, Cancelable>()
-    override fun onStartProcessRefund(
-        result: Result<RefundApi>,
+    override fun startProcessRefund(
         operationId: Long,
         chargeId: String?,
         paymentIntentId: String?,
         paymentIntentClientSecret: String?,
         amount: Long,
         currency: String,
-        metadata: HashMap<String, String>?,
+        metadata: Map<String, String>?,
         reverseTransfer: Boolean?,
         refundApplicationFee: Boolean?,
-        customerCancellationEnabled: Boolean
+        customerCancellationEnabled: Boolean,
+        callback: (Result<RefundApi>) -> Unit
     ) {
         val customerCancellation = if (customerCancellationEnabled) {
             CustomerCancellation.ENABLE_IF_AVAILABLE
@@ -542,7 +562,7 @@ class TerminalPlatformPlugin(
             paymentIntentClientSecret = paymentIntentClientSecret,
             amount = amount,
             currency = currency,
-            metadata = metadata,
+            metadata = metadata?.toHashMap(),
             reverseTransfer = reverseTransfer,
             refundApplicationFee = refundApplicationFee
         )
@@ -550,7 +570,7 @@ class TerminalPlatformPlugin(
         processRefundCancelables[operationId] = terminal.processRefund(
             params,
             config.build(),
-            object : TerminalErrorHandler(result::error), RefundCallback {
+            object : TerminalErrorHandler<RefundApi>(callback), RefundCallback {
                 override fun onFailure(e: TerminalException) {
                     processRefundCancelables.remove(operationId)
                     super.onFailure(e)
@@ -558,45 +578,56 @@ class TerminalPlatformPlugin(
 
                 override fun onSuccess(refund: Refund) {
                     processRefundCancelables.remove(operationId)
-                    result.success(refund.toApi())
+                    callback(Result.success(refund.toApi()))
                 }
             }
         )
     }
 
-    override fun onStopProcessRefund(result: Result<Unit>, operationId: Long) {
+    override fun stopProcessRefund(
+        operationId: Long,
+        callback: (Result<Unit>) -> Unit
+    ) {
         processRefundCancelables.remove(operationId)?.cancel(
-            object : TerminalErrorHandler(result::error), Callback {
-                override fun onSuccess() = result.success(Unit)
+            object : TerminalErrorHandler<Unit>(callback), Callback {
+                override fun onSuccess() = callback(Result.success(Unit))
             }
         )
     }
     // endregion
 
     // region Display information to customers
-    override fun onSetReaderDisplay(result: Result<Unit>, cart: CartApi) {
+
+    override fun setReaderDisplay(
+        cart: CartApi,
+        callback: (Result<Unit>) -> Unit
+    ) {
         terminal.setReaderDisplay(
             cart.toHost(),
-            object : TerminalErrorHandler(result::error), Callback {
-                override fun onSuccess() = result.success(Unit)
+            object : TerminalErrorHandler<Unit>(callback), Callback {
+                override fun onSuccess() = callback(Result.success(Unit))
             }
         )
     }
 
-    override fun onClearReaderDisplay(result: Result<Unit>) {
+    override fun clearReaderDisplay(callback: (Result<Unit>) -> Unit) {
         terminal.clearReaderDisplay(
-            object : TerminalErrorHandler(result::error), Callback {
-                override fun onSuccess() = result.success(Unit)
+            object : TerminalErrorHandler<Unit>(callback), Callback {
+                override fun onSuccess() = callback(Result.success(Unit))
             }
         )
     }
 
-    override fun onSetTapToPayUXConfiguration(configuration: TapToPayUxConfigurationApi) {
-        terminal.setTapToPayUxConfiguration(configuration.toHost());
+    override fun setTapToPayUXConfiguration(configuration: TapToPayUxConfigurationApi) {
+        terminal.setTapToPayUxConfiguration(configuration.toHost())
     }
 
-    override fun onIsTapToPayAccountLinked(onBehalfOf: String?): Boolean {
-        return true // Always return true for android
+    override fun isTapToPayAccountLinked(
+        onBehalfOf: String?,
+        callback: (Result<Boolean>) -> Unit
+    ) {
+        callback(Result.success(true)) // Always return true for android
+
     }
     // endregion
 
@@ -639,21 +670,19 @@ class TerminalPlatformPlugin(
     private fun findActiveReader(serialNumber: String): Reader {
         val reader = discoveredReaders.firstOrNull { it.serialNumber == serialNumber }
         return reader
-            ?: throw createApiError(TerminalExceptionCodeApi.READER_NOT_RECOVERED).toPlatformError()
+            ?: throw createError(createApiException(TerminalExceptionCodeApi.READER_NOT_RECOVERED))
     }
 
     private fun findPaymentIntent(paymentIntentId: String): PaymentIntent {
         val paymentIntent = paymentIntents[paymentIntentId]
         return paymentIntent
-            ?: throw createApiError(TerminalExceptionCodeApi.PAYMENT_INTENT_NOT_RECOVERED)
-                .toPlatformError()
+            ?: throw createError(createApiException(TerminalExceptionCodeApi.PAYMENT_INTENT_NOT_RECOVERED))
     }
 
     private fun findSetupIntent(setupIntentId: String): SetupIntent {
         val setupIntent = setupIntents[setupIntentId]
         return setupIntent
-            ?: throw createApiError(TerminalExceptionCodeApi.SETUP_INTENT_NOT_RECOVERED)
-                .toPlatformError()
+            ?: throw createError(createApiException(TerminalExceptionCodeApi.SETUP_INTENT_NOT_RECOVERED))
     }
 
     internal fun clean() {
@@ -663,7 +692,7 @@ class TerminalPlatformPlugin(
             }
         }
 
-        discoverReadersSubject.clear()
+        discoverReadersStreamController.clear()
 
         processPaymentIntentCancelables.values.forEach { it.cancel(EmptyCallback()) }
         processPaymentIntentCancelables = hashMapOf()

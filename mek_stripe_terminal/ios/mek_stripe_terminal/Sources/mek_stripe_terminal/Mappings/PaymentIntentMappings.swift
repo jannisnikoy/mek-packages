@@ -4,35 +4,35 @@ import StripeTerminal
 extension PaymentIntent {
     func toApi() -> PaymentIntentApi {
         return PaymentIntentApi(
-            amount: Double(amount),
-            amountCapturable: nil,
-            amountDetails: amountDetails?.toApi(),
-            amountReceived: nil,
-            amountTip: amountTip != nil ? Double(truncating: amountTip!) : nil,
-            applicationFeeAmount: nil,
-            applicationId: nil,
-            canceledAt: nil,
-            cancellationReason: nil,
-            captureMethod: captureMethod.toApi(),
-            charges: charges.map { $0.toApi() },
-            clientSecret: nil,
-            confirmationMethod: nil,
-            created: created,
-            currency: currency,
-            customerId: nil,
-            description: description,
             id: stripeId!,
-            invoiceId: nil,
+            createdInMilliseconds: created.toMillisecondsSinceEpoch(),
+            status: status.toApi(),
+            amount: Double(amount),
+            captureMethod: captureMethod.toApi(),
+            currency: currency,
             metadata: metadata ?? [:],
-            onBehalfOf: nil,
+            charges: charges.map { $0.toApi() },
             paymentMethod: paymentMethod?.toApi(),
             paymentMethodId: paymentMethodId,
-            receiptEmail: nil,
-            reviewId: nil,
-            setupFutureUsage: nil,
+            amountDetails: amountDetails?.toApi(),
+            amountTip: amountTip != nil ? Double(truncating: amountTip!) : nil,
             statementDescriptor: statementDescriptor,
             statementDescriptorSuffix: statementDescriptorSuffix,
-            status: status.toApi(),
+            amountCapturable: nil,
+            amountReceived: nil,
+            applicationId: nil,
+            applicationFeeAmount: nil,
+            cancellationReason: nil,
+            canceledAt: nil,
+            clientSecret: nil,
+            confirmationMethod: nil,
+            customerId: nil,
+            descriptionX: description,
+            invoiceId: nil,
+            onBehalfOf: nil,
+            reviewId: nil,
+            receiptEmail: nil,
+            setupFutureUsage: nil,
             transferGroup: nil
         )
     }
@@ -99,7 +99,7 @@ extension PaymentIntentParametersApi {
             .setStatementDescriptorSuffix(statementDescriptorSuffix)
             .setReceiptEmail(receiptEmail)
             .setCustomer(customerId)
-            .setApplicationFeeAmount(applicationFeeAmount?.nsNumberValue)
+            .setApplicationFeeAmount(applicationFeeAmount?.toNsNumber())
             .setTransferDataDestination(transferDataDestination)
             .setTransferGroup(transferGroup)
             .setOnBehalfOf(onBehalfOf)
@@ -116,7 +116,7 @@ extension PaymentMethodTypeApi {
             return .cardPresent
         case .card:
             return .card
-        case .interacPresent:
+        case .interactPresent:
             return .interacPresent
         }
     }

@@ -4,7 +4,7 @@ import StripeTerminal
 extension Tip {
     func toApi() -> TipApi {
         return TipApi(
-            amount: amount?.intValue
+            amount: amount?.toInt64()
         )
     }
 }
@@ -14,7 +14,7 @@ extension Tip {
 extension TippingConfigurationApi {
     func toHost() throws -> TippingConfiguration {
         return try TippingConfigurationBuilder()
-            .setEligibleAmount(eligibleAmount)
+            .setEligibleAmount(eligibleAmount.toInt())
             .build()
     }
 }

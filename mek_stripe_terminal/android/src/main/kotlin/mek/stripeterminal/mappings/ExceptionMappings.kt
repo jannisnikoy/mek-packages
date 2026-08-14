@@ -1,43 +1,37 @@
 package mek.stripeterminal.mappings
 
+import FlutterError
 import com.stripe.stripeterminal.external.models.TerminalErrorCode
 import com.stripe.stripeterminal.external.models.TerminalException
-import android.nfc.NfcAdapter
-import mek.stripeterminal.TerminalPlugin
-import mek.stripeterminal.api.PlatformError
-import mek.stripeterminal.api.TerminalExceptionApi
-import mek.stripeterminal.api.TerminalExceptionCodeApi
+import TerminalExceptionApi
+import TerminalExceptionCodeApi
+import kotlin.stackTraceToString
 
-fun TerminalException.toPlatformError(): PlatformError {
-    return toApi().toPlatformError()
+fun createError(details: TerminalExceptionApi): FlutterError {
+    return FlutterError(
+        code = "mek_stripe_terminal",
+        message = null,
+        details = details
+    )
 }
 
-fun TerminalExceptionApi.toPlatformError(): PlatformError {
-    return PlatformError(code = "mek_stripe_terminal", message = null, details = serialize())
-}
-
-fun TerminalException.toApi(): TerminalExceptionApi {
-    var code = errorCode.toApiCode()
-
-//    if (errorMessage.contains("unexpected reader failure", ignoreCase = true) ||
-//        errorMessage.contains("nfc", ignoreCase = true)) {
-//        try {
-//            val ctx = TerminalPlugin.context
-//            if (ctx != null) {
-//                val nfcAdapter = NfcAdapter.getDefaultAdapter(ctx)
-//                if (nfcAdapter != null && !nfcAdapter.isEnabled) {
-//                    code = TerminalExceptionCodeApi.NFC_DISABLED
-//                }
-//            }
-//        } catch (ignored: Exception) {}
-//    }
-
+fun createApiException(code: TerminalExceptionCodeApi, message: String? = null): TerminalExceptionApi {
     return TerminalExceptionApi(
-        code = code ?: TerminalExceptionCodeApi.UNKNOWN,
-        message = errorMessage,
-        stackTrace = stackTraceToString(),
-        paymentIntent = paymentIntent?.toApi(),
-        apiError = apiError?.toString()
+        code = code,
+        message = message ?: "",
+        stackTrace = null,
+        paymentIntent = null,
+        apiError = null
+    )
+}
+
+fun mapExceptionToApi(exception: TerminalException): TerminalExceptionApi {
+    return TerminalExceptionApi(
+        code = exception.errorCode.toApiCode() ?: TerminalExceptionCodeApi.UNKNOWN,
+        message = exception.errorMessage,
+        stackTrace = exception.stackTraceToString(),
+        paymentIntent = exception.paymentIntent?.toApi(),
+        apiError = exception.apiError?.toString()
     )
 }
 

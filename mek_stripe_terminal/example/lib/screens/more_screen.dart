@@ -30,15 +30,15 @@ class _MoreScreenState extends ConsumerState<MoreScreen> with StateTools {
       body: Column(
         children: [
           FilledButton.tonal(
-            onPressed:
-                !isMutating && connectionStatus == ConnectionStatus.notConnected
-                    ? () => mutate(() async {
-                      final result = await Terminal.instance.clearCachedCredentials();
-                      if (!result.isSuccessful) {
-                        throw result.error ?? Exception('Clear cached credentials failed.');
-                      }
-                    })
-                    : null,
+            onPressed: !isMutating && connectionStatus == ConnectionStatus.notConnected
+                ? () => mutate(() async {
+                    final result = await Terminal.instance.clearCachedCredentials();
+                    if (!result.isSuccessful) {
+                      // ignore: only_throw_errors
+                      throw result.error ?? Exception('Clear cached credentials failed.');
+                    }
+                  })
+                : null,
             child: const Text('Clear cached credentials'),
           ),
           Text(

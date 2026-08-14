@@ -9,23 +9,23 @@ import com.stripe.stripeterminal.external.models.PaymentIntentStatus
 import com.stripe.stripeterminal.external.models.PaymentMethodOptionsParameters
 import com.stripe.stripeterminal.external.models.PaymentMethodType
 import com.stripe.stripeterminal.external.models.PaymentStatus
-import mek.stripeterminal.api.AmountDetailsApi
-import mek.stripeterminal.api.CaptureMethodApi
-import mek.stripeterminal.api.ConfirmationMethodApi
-import mek.stripeterminal.api.ConfirmPaymentIntentConfigurationApi
-import mek.stripeterminal.api.PaymentIntentApi
-import mek.stripeterminal.api.PaymentIntentParametersApi
-import mek.stripeterminal.api.PaymentIntentStatusApi
-import mek.stripeterminal.api.PaymentIntentUsageApi
-import mek.stripeterminal.api.PaymentMethodOptionsParametersApi
-import mek.stripeterminal.api.PaymentMethodTypeApi
-import mek.stripeterminal.api.PaymentStatusApi
+import AmountDetailsApi
+import CaptureMethodApi
+import ConfirmationMethodApi
+import ConfirmPaymentIntentConfigurationApi
+import PaymentIntentApi
+import PaymentIntentParametersApi
+import PaymentIntentStatusApi
+import PaymentIntentUsageApi
+import PaymentMethodOptionsParametersApi
+import PaymentMethodTypeApi
+import PaymentStatusApi
 import mek.stripeterminal.toHashMap
 
 fun PaymentIntent.toApi(): PaymentIntentApi {
     return PaymentIntentApi(
         id = id!!,
-        created = created * 1000,
+        createdInMilliseconds = created * 1000,
         status = status!!.toApi(),
         amount = amount.toDouble(),
         captureMethod = when (captureMethod!!) {
@@ -58,7 +58,7 @@ fun PaymentIntent.toApi(): PaymentIntentApi {
             "manual" -> ConfirmationMethodApi.MANUAL
             else -> null
         },
-        description = description,
+        descriptionX = description,
         invoiceId = invoice,
         onBehalfOf = onBehalfOf,
         receiptEmail = receiptEmail,
@@ -119,7 +119,7 @@ fun PaymentIntentParametersApi.toHost(): PaymentIntentParameters {
             }
         )
     b.setMetadata(metadata)
-    description?.let(b::setDescription)
+    descriptionX?.let(b::setDescription)
     statementDescriptor?.let(b::setStatementDescriptor)
     statementDescriptorSuffix?.let(b::setStatementDescriptorSuffix)
     receiptEmail?.let(b::setReceiptEmail)

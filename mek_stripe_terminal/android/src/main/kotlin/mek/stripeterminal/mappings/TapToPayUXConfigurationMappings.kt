@@ -1,11 +1,11 @@
 package mek.stripeterminal.mappings
 
-import mek.stripeterminal.api.TapToPayUxConfigurationApi
+import TapToPayUxConfigurationApi
 import com.stripe.stripeterminal.external.models.TapToPayUxConfiguration
-import mek.stripeterminal.api.TapToPayUxConfigurationColorSchemeApi
-import mek.stripeterminal.api.TapToPayUxConfigurationTapZoneApi
-import mek.stripeterminal.api.TapToPayUxConfigurationTapZoneIndicatorApi
-import mek.stripeterminal.api.TapToPayUxConfigurationDarkModeApi
+import TapToPayUxConfigurationColorSchemeApi
+import TapToPayUxConfigurationTapZoneApi
+import TapToPayUxConfigurationTapZoneIndicatorApi
+import TapToPayUxConfigurationDarkModeApi
 
 
 fun TapToPayUxConfigurationApi.toHost(): TapToPayUxConfiguration {

@@ -19,16 +19,16 @@ extension ChargeStatus {
 extension Charge {
     func toApi() -> ChargeApi {
         return ChargeApi(
-            amount: amount.intValue,
-            authorizationCode: authorizationCode,
-            calculatedStatementDescriptor: calculatedStatementDescriptor,
+            amount: amount.toInt64(),
             currency: currency,
-            description: description,
+            status: status.toApi(),
+            paymentMethodDetails: paymentMethodDetails?.toApi(),
+            descriptionX: description,
             id: stripeId,
             metadata: metadata,
-            paymentMethodDetails: paymentMethodDetails?.toApi(),
             statementDescriptorSuffix: statementDescriptorSuffix,
-            status: status.toApi()
+            calculatedStatementDescriptor: calculatedStatementDescriptor,
+            authorizationCode: authorizationCode
         )
     }
 }
